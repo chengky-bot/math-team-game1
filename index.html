@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>數學守護者：對戰巔峰版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+
+        body {
+            font-family: 'ZCOOL+KuaiLe', cursive, sans-serif;
+            overflow: hidden;
+            background-color: #1a2e1a;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .game-container {
+            height: 100vh;
+            background: linear-gradient(to bottom, #0f172a 0%, #1e3a8a 100%);
+            position: relative;
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 42%;
+            background: #064e3b;
+            z-index: 10;
+        }
+
+        /* 城堡樣式 */
+        .castle-wrapper {
+            position: absolute;
+            bottom: 42%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 15;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .castle-emoji {
+            font-size: 110px;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+            transition: transform 0.2s;
+        }
+
+        .castle-label {
+            background: rgba(0,0,0,0.6);
+            padding: 4px 12px;
+            border-radius: 12px;
+            color: white;
+            font-size: 18px;
+            margin-top: -10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        /* 怪物樣式 */
+        .monster-container {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+
+        .monster {
+            font-size: 130px;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-25px) rotate(2deg); }
+        }
+
+        /* 震動與特效 */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-4px, 0, 0); }
+            20%, 80% { transform: translate3d(6px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+        .projectile {
+            position: absolute;
+            pointer-events: none;
+            z-index: 30;
+            font-size: 50px;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            z-index: 60;
+            animation: burst 0.8s ease-out forwards;
+        }
+
+        @keyframes burst {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+
+        .skill-badge {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 50;
+        }
+
+        /* 冰凍視覺增強 */
+        .disabled-btn {
+            opacity: 0.6;
+            pointer-events: none;
+            transform: scale(0.95);
+            background-color: #e0f2fe !important; /* sky-100 */
+            border-color: #7dd3fc !important; /* sky-300 */
+            position: relative;
+        }
+        .disabled-btn::after {
+            content: '❄️ 冰凍中';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #0284c7;
+            background: rgba(255,255,255,0.5);
+            border-radius: inherit;
+            font-weight: bold;
+        }
+
+        #start-menu {
+            background: radial-gradient(circle, #1e3a8a 0%, #020617 100%);
+            z-index: 100;
+        }
+
+        .vs-divider {
+            position: absolute;
+            left: 50%;
+            top: 15%;
+            bottom: 42%;
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent);
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 開始菜單 -->
+<div id="start-menu" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-white text-center">
+    <div class="mb-4 text-8xl animate-pulse">⚔️</div>
+    <h1 class="text-7xl font-bold mb-4 drop-shadow-lg text-yellow-400">數學守護者</h1>
+    <p class="mb-6 text-xl text-blue-200">選擇運算類型與模式，擊碎對手或巨魔吧！</p>
+    
+    <!-- 運算選擇 -->
+    <div class="flex justify-center gap-4 mb-8 w-full max-w-2xl">
+        <div class="bg-white/10 p-3 rounded-2xl backdrop-blur-xl border border-white/20 flex gap-4 w-full justify-center items-center shadow-lg">
+            <span class="text-2xl font-bold mr-2 text-white drop-shadow-md">運算類型:</span>
+            <button id="btn-add" onclick="selectMath('add')" class="bg-yellow-500 text-black px-8 py-3 rounded-xl text-2xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]">➕ 加法</button>
+            <button id="btn-sub" onclick="selectMath('sub')" class="bg-gray-600 text-white px-8 py-3 rounded-xl text-2xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➖ 減法</button>
+        </div>
+    </div>
+
+    <div class="flex gap-8 mb-12 w-full max-w-4xl">
+        <!-- 隊伍設定 -->
+        <div class="bg-white/10 p-6 rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
+            <div class="flex items-center justify-center mb-4 text-2xl">
+                <input id="left-name-input" type="text" placeholder="騎士" value="騎士" class="bg-transparent border-b-2 border-blue-400 outline-none w-1/2 text-center placeholder-white/50">
+                <span class="ml-2 font-bold">隊</span>
+            </div>
+            <div class="flex justify-center gap-3" id="left-color-selector">
+                <div class="color-dot active bg-blue-500 w-8 h-8 rounded-full cursor-pointer border-2 border-white" data-color="blue-500"></div>
+                <div class="color-dot bg-indigo-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="indigo-500"></div>
+                <div class="color-dot bg-cyan-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="cyan-500"></div>
+            </div>
+        </div>
+
+        <div class="bg-white/10 p-6 rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
+            <div class="flex items-center justify-center mb-4 text-2xl">
+                <input id="right-name-input" type="text" placeholder="法師" value="法師" class="bg-transparent border-b-2 border-red-400 outline-none w-1/2 text-center placeholder-white/50">
+                <span class="ml-2 font-bold">隊</span>
+            </div>
+            <div class="flex justify-center gap-3" id="right-color-selector">
+                <div class="color-dot bg-orange-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="orange-500"></div>
+                <div class="color-dot active bg-red-500 w-8 h-8 rounded-full cursor-pointer border-2 border-white" data-color="red-500"></div>
+                <div class="color-dot bg-pink-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="pink-500"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex gap-6">
+        <button onclick="startGame('coop')" class="bg-green-500 hover:bg-green-400 px-12 py-5 rounded-2xl text-2xl font-bold shadow-xl transition transform hover:scale-105">
+            🤝 合作擊王
+        </button>
+        <button onclick="startGame('vs')" class="bg-red-600 hover:bg-red-500 px-12 py-5 rounded-2xl text-2xl font-bold shadow-xl transition transform hover:scale-105">
+            ⚔️ 巔峰對戰
+        </button>
+    </div>
+</div>
+
+<!-- 遊戲畫面 -->
+<div class="game-container hidden" id="game-screen">
+    <!-- 頂部 UI -->
+    <div class="absolute top-0 w-full p-4 flex justify-between items-start z-30">
+        <div id="left-stats-box" class="p-3 rounded-2xl text-white shadow-xl w-64 backdrop-blur-md border border-white/20 transition-colors duration-300">
+            <div id="left-display-name" class="text-xl font-bold"></div>
+            <div id="left-combo" class="text-yellow-300 text-sm">Combo: 0</div>
+            <div class="h-2 bg-black/30 rounded-full mt-2 overflow-hidden">
+                <div id="left-progress" class="h-full bg-white transition-all w-0"></div>
+            </div>
+        </div>
+
+        <div id="boss-ui" class="flex-1 max-w-md mx-4 text-center">
+            <div id="boss-label" class="text-red-300 font-bold mb-1">森林巨魔 HP</div>
+            <div class="h-8 bg-black/50 rounded-full border-2 border-white/30 overflow-hidden relative shadow-inner">
+                <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300 w-full"></div>
+                <div id="boss-hp-text" class="absolute inset-0 flex items-center justify-center text-white text-sm font-bold drop-shadow-md">1500 / 1500</div>
+            </div>
+            <div id="freeze-timer" class="text-cyan-400 font-bold mt-1 text-sm hidden">❄️ 已冰凍 7.0s</div>
+        </div>
+
+        <div id="right-stats-box" class="p-3 rounded-2xl text-white shadow-xl w-64 text-right backdrop-blur-md border border-white/20 transition-colors duration-300">
+            <div id="right-display-name" class="text-xl font-bold"></div>
+            <div id="right-combo" class="text-yellow-300 text-sm">Combo: 0</div>
+            <div class="h-2 bg-black/30 rounded-full mt-2 overflow-hidden">
+                <div id="right-progress" class="h-full bg-white transition-all w-0"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="vs-divider hidden" id="vs-divider"></div>
+
+    <!-- 戰場實體 -->
+    <div class="monster-container" id="monster-box">
+        <div class="monster" id="boss-sprite">👹</div>
+    </div>
+
+    <!-- 左城堡 -->
+    <div id="left-castle-wrapper" class="castle-wrapper" style="left: 10%;">
+        <div class="h-4 w-32 bg-gray-900 rounded-full mb-2 border border-white/30 overflow-hidden">
+            <div id="left-castle-hp-bar" class="h-full bg-green-500 w-full transition-all duration-300"></div>
+        </div>
+        <div class="castle-emoji">🏰</div>
+        <div class="castle-label" id="left-castle-label">左方防禦</div>
+    </div>
+
+    <!-- 右城堡 -->
+    <div id="right-castle-wrapper" class="castle-wrapper" style="right: 10%;">
+        <div class="h-4 w-32 bg-gray-900 rounded-full mb-2 border border-white/30 overflow-hidden">
+            <div id="right-castle-hp-bar" class="h-full bg-green-500 w-full transition-all duration-300"></div>
+        </div>
+        <div class="castle-emoji" style="transform: scaleX(-1);">🏰</div>
+        <div class="castle-label" id="right-castle-label">右方防禦</div>
+    </div>
+
+    <!-- 底部互動區 -->
+    <div class="absolute bottom-0 w-full flex z-40 px-6 pb-6 gap-6 pt-10 pointer-events-none">
+        <div class="flex-1 flex flex-col items-center justify-end pointer-events-auto">
+            <div id="left-question-box" class="bg-white/95 p-6 rounded-[2rem] shadow-2xl w-full max-w-sm border-b-8 relative transition-all duration-300">
+                <div id="left-skill-tag" class="skill-badge hidden"></div>
+                <div id="left-question" class="text-6xl font-black text-gray-800 mb-8 text-center">? + ?</div>
+                <div class="grid grid-cols-2 gap-4" id="left-options"></div>
+            </div>
+        </div>
+        <div class="flex-1 flex flex-col items-center justify-end pointer-events-auto">
+            <div id="right-question-box" class="bg-white/95 p-6 rounded-[2rem] shadow-2xl w-full max-w-sm border-b-8 relative transition-all duration-300">
+                <div id="right-skill-tag" class="skill-badge hidden"></div>
+                <div id="right-question" class="text-6xl font-black text-gray-800 mb-8 text-center">? + ?</div>
+                <div class="grid grid-cols-2 gap-4" id="right-options"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ground"></div>
+
+    <!-- 結算畫面 -->
+    <div id="overlay" class="absolute inset-0 bg-black/80 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-8 md:p-12 rounded-[3rem] text-center max-w-4xl w-11/12 shadow-[0_0_50px_rgba(255,255,255,0.2)] max-h-[95vh] overflow-y-auto">
+            <h2 id="result-title" class="text-5xl md:text-6xl font-bold mb-4"></h2>
+            <p id="result-msg" class="text-xl md:text-2xl text-gray-600 mb-8"></p>
+
+            <!-- 戰績統計區塊 -->
+            <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 hidden">
+                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-200 shadow-inner">
+                    <h3 id="result-left-name" class="text-2xl font-bold text-blue-800 mb-4 border-b-2 border-blue-200 pb-2">騎士隊</h3>
+                    <div class="flex justify-around text-lg">
+                        <div class="text-green-600 font-bold">✅ 答對: <span id="left-correct-count" class="text-2xl">0</span></div>
+                        <div class="text-red-600 font-bold">❌ 答錯: <span id="left-wrong-count" class="text-2xl">0</span></div>
+                    </div>
+                    <div class="mt-4 text-orange-600 font-bold text-xl">💥 總輸出: <span id="left-damage-count">0</span></div>
+                </div>
+
+                <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-200 shadow-inner">
+                    <h3 id="result-right-name" class="text-2xl font-bold text-red-800 mb-4 border-b-2 border-red-200 pb-2">法師隊</h3>
+                    <div class="flex justify-around text-lg">
+                        <div class="text-green-600 font-bold">✅ 答對: <span id="right-correct-count" class="text-2xl">0</span></div>
+                        <div class="text-red-600 font-bold">❌ 答錯: <span id="right-wrong-count" class="text-2xl">0</span></div>
+                    </div>
+                    <div class="mt-4 text-orange-600 font-bold text-xl">💥 總輸出: <span id="right-damage-count">0</span></div>
+                </div>
+            </div>
+
+            <div id="encouragement-msg" class="text-xl md:text-2xl font-bold text-indigo-600 mb-8 bg-indigo-50 p-4 rounded-xl hidden">
+                你們都表現得非常棒！繼續保持對數學的熱情吧！🌟
+            </div>
+
+            <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-500 text-white px-12 py-4 rounded-2xl font-bold text-2xl transition shadow-lg">返回主頁</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 音效系統 ---
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let ctx = null;
+
+    function playSound(type) {
+        try {
+            if (!ctx) ctx = new AudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            const now = ctx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(110, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'skill') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(1760, now + 0.4);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            }
+        } catch(e) {
+            console.warn("Audio play blocked or failed", e);
+        }
+    }
+
+    // --- 遊戲邏輯與狀態 ---
+    const state = {
+        mode: 'coop',
+        mathType: 'add',
+        maxBossHp: 1500,
+        bossHp: 1500,
+        maxCastleHp: 300,
+        leftHp: 300,
+        rightHp: 300,
+        leftCombo: 0,
+        rightCombo: 0,
+        leftFrozen: false,
+        rightFrozen: false,
+        isGameOver: false,
+        bossFrozen: false,
+        leftName: '',
+        rightName: '',
+        leftColor: 'blue-500',
+        rightColor: 'red-500',
+        stats: {
+            left: { correct: 0, wrong: 0, damage: 0 },
+            right: { correct: 0, wrong: 0, damage: 0 }
+        }
+    };
+
+    // --- DOM 快取 (架構優化) ---
+    const DOM = {};
+    function initDOMCache() {
+        ['left', 'right'].forEach(side => {
+            DOM[`${side}DisplayName`] = document.getElementById(`${side}-display-name`);
+            DOM[`${side}Combo`] = document.getElementById(`${side}-combo`);
+            DOM[`${side}Progress`] = document.getElementById(`${side}-progress`);
+            DOM[`${side}StatsBox`] = document.getElementById(`${side}-stats-box`);
+            DOM[`${side}CastleWrapper`] = document.getElementById(`${side}-castle-wrapper`);
+            DOM[`${side}CastleHpBar`] = document.getElementById(`${side}-castle-hp-bar`);
+            DOM[`${side}CastleLabel`] = document.getElementById(`${side}-castle-label`);
+            DOM[`${side}QuestionBox`] = document.getElementById(`${side}-question-box`);
+            DOM[`${side}Question`] = document.getElementById(`${side}-question`);
+            DOM[`${side}Options`] = document.getElementById(`${side}-options`);
+            DOM[`${side}SkillTag`] = document.getElementById(`${side}-skill-tag`);
+        });
+        DOM.bossUi = document.getElementById('boss-ui');
+        DOM.bossHpBar = document.getElementById('boss-hp-bar');
+        DOM.bossHpText = document.getElementById('boss-hp-text');
+        DOM.bossSprite = document.getElementById('boss-sprite');
+        DOM.freezeTimer = document.getElementById('freeze-timer');
+        DOM.monsterBox = document.getElementById('monster-box');
+        DOM.vsDivider = document.getElementById('vs-divider');
+    }
+
+    // 選色邏輯
+    document.querySelectorAll('.color-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            const parent = dot.parentElement;
+            parent.querySelectorAll('.color-dot').forEach(d => d.style.borderColor = 'transparent');
+            dot.style.borderColor = 'white';
+            const side = parent.id.split('-')[0];
+            state[side + 'Color'] = dot.dataset.color;
+        });
+    });
+
+    function selectMath(type) {
+        state.mathType = type;
+        const btnAdd = document.getElementById('btn-add');
+        const btnSub = document.getElementById('btn-sub');
+        
+        const activeClass = 'bg-yellow-500 text-black px-8 py-3 rounded-xl text-2xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]';
+        const inactiveClass = 'bg-gray-600 text-white px-8 py-3 rounded-xl text-2xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
+
+        btnAdd.className = type === 'add' ? activeClass : inactiveClass;
+        btnSub.className = type === 'sub' ? activeClass : inactiveClass;
+    }
+
+    function startGame(mode) {
+        initDOMCache(); // 初始化 DOM 引用
+        state.mode = mode;
+        
+        // 健壯性：防止空字串輸入
+        const leftInput = document.getElementById('left-name-input').value.trim();
+        const rightInput = document.getElementById('right-name-input').value.trim();
+        state.leftName = (leftInput || '騎士') + '隊';
+        state.rightName = (rightInput || '法師') + '隊';
+        
+        document.getElementById('start-menu').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+
+        // 初始化 UI
+        DOM.leftDisplayName.innerText = state.leftName;
+        DOM.rightDisplayName.innerText = state.rightName;
+        DOM.leftCastleLabel.innerText = state.leftName;
+        DOM.rightCastleLabel.innerText = state.rightName;
+        
+        DOM.leftStatsBox.classList.add(`bg-${state.leftColor}/60`);
+        DOM.rightStatsBox.classList.add(`bg-${state.rightColor}/60`);
+        DOM.leftQuestionBox.classList.add(`border-${state.leftColor}`);
+        DOM.rightQuestionBox.classList.add(`border-${state.rightColor}`);
+
+        if (mode === 'vs') {
+            DOM.bossUi.classList.add('hidden');
+            DOM.monsterBox.classList.add('hidden');
+            DOM.vsDivider.classList.remove('hidden');
+            DOM.leftCastleWrapper.style.left = '15%';
+            DOM.rightCastleWrapper.style.right = '15%';
+        } else {
+            DOM.vsDivider.classList.add('hidden');
+            DOM.rightCastleWrapper.classList.add('hidden');
+            DOM.leftCastleWrapper.style.left = '50%';
+            DOM.leftCastleWrapper.style.transform = 'translateX(-50%)';
+            DOM.leftCastleLabel.innerText = "守護城堡";
+            DOM.bossHpText.innerText = `${state.bossHp} / ${state.maxBossHp}`;
+        }
+
+        updateQuestion('left');
+        updateQuestion('right');
+        updateUI(); // 確保初始血條正確渲染
+    }
+
+    function createParticles(x, y) {
+        for (let i = 0; i < 12; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.backgroundColor = `hsl(${Math.random()*360}, 70%, 60%)`;
+            p.style.width = Math.random() * 8 + 4 + 'px';
+            p.style.height = p.style.width;
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            const tx = (Math.random() - 0.5) * 150;
+            const ty = (Math.random() - 0.5) * 150;
+            p.style.setProperty('--tx', `${tx}px`);
+            p.style.setProperty('--ty', `${ty}px`);
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 800);
+        }
+    }
+
+    function generateQuestion() {
+        let a, b, ans;
+        if (state.mathType === 'add') {
+            a = Math.floor(Math.random() * 9) + 1; // 1~9
+            b = Math.floor(Math.random() * 9) + 1; // 1~9
+            ans = a + b;
+        } else {
+            ans = Math.floor(Math.random() * 10); // 答案 0~9
+            b = Math.floor(Math.random() * 9) + 1; // 減數 1~9
+            a = ans + b; // 被減數 1~18
+        }
+
+        let opts = new Set([ans]);
+        let attempts = 0;
+        // 防呆保護：避免無限迴圈
+        while (opts.size < 4 && attempts < 50) {
+            let f = state.mathType === 'add' 
+                ? Math.floor(Math.random() * 18) + 1 
+                : Math.floor(Math.random() * 10);
+            opts.add(f);
+            attempts++;
+        }
+        
+        let finalOpts = Array.from(opts);
+        finalOpts.sort(() => Math.random() - 0.5);
+
+        const rand = Math.random();
+        let type = 'normal';
+        if (rand < 0.15) type = 'freeze';
+        else if (rand < 0.3) type = 'heal';
+
+        const symbol = state.mathType === 'add' ? '+' : '-';
+        return { q: `${a} ${symbol} ${b}`, a: ans, options: finalOpts, type };
+    }
+
+    function updateQuestion(side) {
+        if (state.isGameOver) return;
+        const data = generateQuestion();
+        
+        const qBox = DOM[`${side}QuestionBox`];
+        const qEl = DOM[`${side}Question`];
+        const optEl = DOM[`${side}Options`];
+        const tagEl = DOM[`${side}SkillTag`];
+
+        qEl.innerText = data.q;
+        optEl.innerHTML = ''; // 清空選項
+        
+        // 重置技能外觀
+        qBox.classList.remove('bg-blue-50', 'bg-green-50');
+        tagEl.classList.add('hidden');
+        
+        if (data.type === 'freeze') {
+            qBox.classList.add('bg-blue-50');
+            tagEl.classList.remove('hidden');
+            tagEl.className = 'skill-badge bg-blue-500';
+            tagEl.innerText = state.mode === 'vs' ? '❄️ 禁言對手' : '❄️ 冰凍巨魔';
+        } else if (data.type === 'heal') {
+            qBox.classList.add('bg-green-50');
+            tagEl.classList.remove('hidden');
+            tagEl.className = 'skill-badge bg-green-500';
+            tagEl.innerText = '💚 修復城堡';
+        }
+
+        const color = state[side + 'Color'];
+        data.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = `answer-btn py-5 text-3xl font-black rounded-2xl shadow-lg bg-white border-b-4 border-${color} text-${color} transition transform active:scale-95 hover:bg-gray-50`;
+            btn.innerText = opt;
+            // 連點保護：防止同一題被重複觸發
+            btn.onclick = (e) => {
+                if(btn.disabled) return;
+                Array.from(optEl.children).forEach(b => b.disabled = true);
+                handleAnswer(side, opt, data.a, data.type, e);
+            };
+            optEl.appendChild(btn);
+        });
+    }
+
+    function handleAnswer(side, picked, correct, type, event) {
+        if (state.isGameOver) return;
+
+        if (picked === correct) {
+            playSound('correct');
+            createParticles(event.clientX, event.clientY);
+            const combo = side === 'left' ? ++state.leftCombo : ++state.rightCombo;
+            const damage = Math.floor(20 * (combo >= 3 ? 1.5 : 1));
+
+            state.stats[side].correct++;
+            state.stats[side].damage += damage;
+
+            if (type === 'freeze') {
+                playSound('skill');
+                if (state.mode === 'vs') {
+                    const target = side === 'left' ? 'right' : 'left';
+                    applyPlayerFreeze(target);
+                } else {
+                    applyBossFreeze();
+                }
+            }
+            if (type === 'heal') {
+                playSound('skill');
+                state[side + 'Hp'] = Math.min(state.maxCastleHp, state[side + 'Hp'] + 30);
+            }
+
+            if (state.mode === 'vs') {
+                const target = side === 'left' ? 'right' : 'left';
+                state[target + 'Hp'] = Math.max(0, state[target + 'Hp'] - damage);
+                createProjectile(side, target, combo >= 3);
+            } else {
+                state.bossHp = Math.max(0, state.bossHp - damage);
+                createProjectile(side, 'boss', combo >= 3);
+            }
+        } else {
+            playSound('wrong');
+            if (side === 'left') state.leftCombo = 0; else state.rightCombo = 0;
+            state.stats[side].wrong++;
+
+            if (state.mode === 'vs') {
+                state[side + 'Hp'] = Math.max(0, state[side + 'Hp'] - 15);
+                DOM[`${side}CastleWrapper`].classList.add('shake');
+                setTimeout(() => DOM[`${side}CastleWrapper`].classList.remove('shake'), 400);
+            } else {
+                state.leftHp = Math.max(0, state.leftHp - 20);
+                if (!state.bossFrozen) monsterAttack();
+            }
+        }
+
+        updateUI();
+        checkGameOver();
+        // 如果遊戲沒結束，就立即更新題目
+        if(!state.isGameOver) updateQuestion(side);
+    }
+
+    function applyPlayerFreeze(side) {
+        state[side + 'Frozen'] = true;
+        const qBox = DOM[`${side}QuestionBox`];
+        qBox.classList.add('disabled-btn');
+        setTimeout(() => {
+            state[side + 'Frozen'] = false;
+            qBox.classList.remove('disabled-btn');
+        }, 3000);
+    }
+
+    function applyBossFreeze() {
+        if (state.bossFrozen) return;
+        state.bossFrozen = true;
+        DOM.bossSprite.style.filter = 'drop-shadow(0 0 30px #60a5fa) saturate(0) hue-rotate(180deg)';
+        DOM.freezeTimer.classList.remove('hidden');
+        
+        let sec = 7.0;
+        const itv = setInterval(() => {
+            sec -= 0.1;
+            DOM.freezeTimer.innerText = `❄️ 已冰凍 ${sec.toFixed(1)}s`;
+            if (sec <= 0 || state.isGameOver) {
+                clearInterval(itv);
+                state.bossFrozen = false;
+                DOM.bossSprite.style.filter = '';
+                DOM.freezeTimer.classList.add('hidden');
+            }
+        }, 100);
+    }
+
+    function createProjectile(from, to, isSuper) {
+        const p = document.createElement('div');
+        p.className = 'projectile';
+        p.innerText = isSuper ? '💥' : (from === 'left' ? '⚡' : '🔥');
+        
+        const fromEl = DOM[`${from}StatsBox`];
+        const fromRect = fromEl.getBoundingClientRect();
+        p.style.left = (fromRect.left + fromRect.width/2) + 'px';
+        p.style.top = fromRect.top + 'px';
+        document.body.appendChild(p);
+
+        let targetX, targetY, targetEl;
+        if (to === 'boss') {
+            targetX = window.innerWidth / 2;
+            targetY = window.innerHeight * 0.3;
+            targetEl = DOM.bossSprite;
+        } else {
+            const wrapper = DOM[`${to}CastleWrapper`];
+            const rect = wrapper.getBoundingClientRect();
+            targetX = rect.left + rect.width / 2;
+            targetY = rect.top + rect.height / 2;
+            targetEl = wrapper;
+        }
+
+        setTimeout(() => {
+            p.style.left = targetX + 'px';
+            p.style.top = targetY + 'px';
+            p.style.transform = 'scale(2) rotate(360deg)';
+        }, 50);
+
+        setTimeout(() => {
+            if (p.parentNode) p.remove();
+            if (targetEl && to !== 'boss') {
+                targetEl.classList.add('shake');
+                setTimeout(() => targetEl.classList.remove('shake'), 400);
+            }
+        }, 550);
+    }
+
+    function monsterAttack() {
+        const f = document.createElement('div');
+        f.className = 'projectile';
+        f.innerText = '☄️';
+        f.style.left = '50%';
+        f.style.top = '30%';
+        document.body.appendChild(f);
+
+        const target = DOM.leftCastleWrapper;
+        const rect = target.getBoundingClientRect();
+        
+        // 健壯性：防止遊戲結束或元件隱藏導致座標錯誤
+        if(rect.width === 0) { f.remove(); return; }
+
+        setTimeout(() => {
+            f.style.left = (rect.left + rect.width/2) + 'px';
+            f.style.top = (rect.top + rect.height/2) + 'px';
+            f.style.transform = 'scale(2.5)';
+        }, 50);
+
+        setTimeout(() => {
+            if (f.parentNode) f.remove();
+            target.classList.add('shake');
+            setTimeout(() => target.classList.remove('shake'), 400);
+        }, 600);
+    }
+
+    function getHpColorClass(percent) {
+        if (percent < 30) return 'bg-red-500';
+        if (percent < 60) return 'bg-yellow-500';
+        return 'bg-green-500';
+    }
+
+    function updateUI() {
+        if (state.mode === 'coop') {
+            DOM.bossHpBar.style.width = (state.bossHp / state.maxBossHp * 100) + '%';
+            DOM.bossHpText.innerText = `${state.bossHp} / ${state.maxBossHp}`;
+            
+            const leftPct = (state.leftHp / state.maxCastleHp) * 100;
+            DOM.leftCastleHpBar.style.width = leftPct + '%';
+            DOM.leftCastleHpBar.className = `h-full w-full transition-all duration-300 ${getHpColorClass(leftPct)}`;
+        } else {
+            const leftPct = (state.leftHp / state.maxCastleHp) * 100;
+            const rightPct = (state.rightHp / state.maxCastleHp) * 100;
+            
+            DOM.leftCastleHpBar.style.width = leftPct + '%';
+            DOM.leftCastleHpBar.className = `h-full w-full transition-all duration-300 ${getHpColorClass(leftPct)}`;
+            
+            DOM.rightCastleHpBar.style.width = rightPct + '%';
+            DOM.rightCastleHpBar.className = `h-full w-full transition-all duration-300 ${getHpColorClass(rightPct)}`;
+        }
+
+        DOM.leftCombo.innerText = `Combo: ${state.leftCombo}`;
+        DOM.rightCombo.innerText = `Combo: ${state.rightCombo}`;
+        DOM.leftProgress.style.width = Math.min(100, state.leftCombo * 10) + '%';
+        DOM.rightProgress.style.width = Math.min(100, state.rightCombo * 10) + '%';
+    }
+
+    function checkGameOver() {
+        if (state.isGameOver) return;
+
+        if (state.mode === 'coop') {
+            if (state.bossHp <= 0) endGame(true, '勝利！全班成功守護了城堡！');
+            else if (state.leftHp <= 0) endGame(false, '失敗！巨魔摧毀了城堡...');
+        } else {
+            if (state.leftHp <= 0) endGame(true, `${state.rightName} 獲勝！`);
+            else if (state.rightHp <= 0) endGame(true, `${state.leftName} 獲勝！`);
+        }
+    }
+
+    function endGame(isWin, msg) {
+        state.isGameOver = true;
+        document.getElementById('overlay').classList.remove('hidden');
+        document.getElementById('result-title').innerText = isWin ? '🏆 戰鬥結束' : '❌ 挑戰結束';
+        document.getElementById('result-msg').innerText = msg;
+
+        // 顯示統計資料
+        document.getElementById('stats-container').classList.remove('hidden');
+        document.getElementById('result-left-name').innerText = state.leftName;
+        document.getElementById('left-correct-count').innerText = state.stats.left.correct;
+        document.getElementById('left-wrong-count').innerText = state.stats.left.wrong;
+        document.getElementById('left-damage-count').innerText = state.stats.left.damage;
+
+        document.getElementById('result-right-name').innerText = state.rightName;
+        document.getElementById('right-correct-count').innerText = state.stats.right.correct;
+        document.getElementById('right-wrong-count').innerText = state.stats.right.wrong;
+        document.getElementById('right-damage-count').innerText = state.stats.right.damage;
+
+        // 鼓勵小語
+        const encMsgEl = document.getElementById('encouragement-msg');
+        encMsgEl.classList.remove('hidden');
+        
+        let encMsg = "";
+        if (state.mode === 'coop') {
+            encMsg = isWin ? "完美的團隊合作！巨魔完全不是你們的對手！🎉" : "差一點點就成功了！再挑戰一次，你們一定能打敗牠！💪";
+        } else {
+            encMsg = "真是一場勢均力敵的頂尖對決！雙方都展現了驚人的數學實力！🔥";
+        }
+        encMsgEl.innerText = encMsg;
+    }
+</script>
+
+</body>
+</html>
