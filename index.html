@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>數學守護者：對戰巔峰版</title>
+    <title>數學守護者：終極狂暴版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
@@ -72,6 +72,19 @@
             font-size: 130px;
             filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
             animation: float 3s ease-in-out infinite;
+            transition: all 0.5s ease;
+        }
+
+        /* 狂暴巨魔樣式 */
+        .boss-enraged {
+            filter: drop-shadow(0 0 40px #ef4444) hue-rotate(-40deg) saturate(200%);
+            transform: scale(1.5) !important;
+            animation: enragedFloat 0.4s infinite alternate;
+        }
+
+        @keyframes enragedFloat {
+            0% { transform: scale(1.5) translateY(0); }
+            100% { transform: scale(1.5) translateY(-25px); }
         }
 
         @keyframes float {
@@ -94,6 +107,21 @@
             z-index: 30;
             font-size: 50px;
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* 大絕招：隕石特效 */
+        .meteor {
+            position: absolute;
+            pointer-events: none;
+            z-index: 100;
+            font-size: 80px;
+            filter: drop-shadow(0 0 20px #fb923c);
+            animation: meteorFall 0.7s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+        }
+
+        @keyframes meteorFall {
+            0% { transform: translate(var(--sx), -200px) scale(2); opacity: 1; }
+            100% { transform: translate(var(--ex), var(--ey)) scale(3); opacity: 0; }
         }
 
         .particle {
@@ -121,6 +149,30 @@
             font-weight: bold;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             z-index: 50;
+        }
+
+        /* 大絕招按鈕 */
+        .ult-btn {
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 60;
+            animation: pulse-glow 1s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px rgba(234,179,8,0.6); }
+            100% { transform: translateX(-50%) scale(1.1); box-shadow: 0 0 30px rgba(239,68,68,1); }
+        }
+
+        /* 烏雲遮蔽特效 */
+        .dark-cloud {
+            animation: cloudAppear 0.3s ease-out forwards;
+        }
+        @keyframes cloudAppear {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
         /* 冰凍視覺增強 */
@@ -161,7 +213,6 @@
             z-index: 5;
         }
 
-        /* 計時器動畫 */
         .timer-pulse {
             animation: timerPulse 1s infinite alternate;
         }
@@ -169,9 +220,39 @@
             0% { transform: scale(1); box-shadow: 0 0 15px rgba(239,68,68,0.5); }
             100% { transform: scale(1.05); box-shadow: 0 0 30px rgba(239,68,68,0.9); }
         }
+
+        /* 螢幕中央警告文字 */
+        #screen-alert {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            font-weight: black;
+            color: #ff3333;
+            text-shadow: 0 0 20px #ff0000, 2px 2px 0px #fff;
+            z-index: 90;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .alert-show {
+            animation: alertZoom 2s ease-out forwards;
+        }
+        @keyframes alertZoom {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            10% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            20% { transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
     </style>
 </head>
 <body>
+
+<!-- 全局音效開關 -->
+<button id="sound-toggle" onclick="toggleSound()" class="absolute top-4 right-4 z-[100] text-3xl bg-white/10 p-3 rounded-full backdrop-blur-md hover:bg-white/30 transition shadow-lg border border-white/30" title="開啟/關閉音效">🔊</button>
 
 <!-- 開始菜單 -->
 <div id="start-menu" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-white text-center overflow-y-auto">
@@ -245,17 +326,19 @@
 
 <!-- 遊戲畫面 -->
 <div class="game-container hidden" id="game-screen">
+    <div id="screen-alert">⚠️ 巨魔進入狂暴狀態！</div>
+
     <!-- 頂部 UI -->
     <div class="absolute top-0 w-full p-4 flex justify-between items-start z-30">
         <div id="left-stats-box" class="p-3 rounded-2xl text-white shadow-xl w-64 backdrop-blur-md border border-white/20 transition-colors duration-300">
             <div id="left-display-name" class="text-xl font-bold"></div>
-            <div id="left-combo" class="text-yellow-300 text-sm">Combo: 0</div>
-            <div class="h-2 bg-black/30 rounded-full mt-2 overflow-hidden">
-                <div id="left-progress" class="h-full bg-white transition-all w-0"></div>
+            <div id="left-energy-text" class="text-yellow-300 text-sm font-bold">⚡ 能量: 0%</div>
+            <div class="h-3 bg-black/40 rounded-full mt-2 overflow-hidden border border-white/30">
+                <div id="left-progress" class="h-full bg-gradient-to-r from-yellow-300 to-yellow-500 transition-all duration-300 w-0"></div>
             </div>
         </div>
 
-        <!-- 中央 UI (計時器與王血條) -->
+        <!-- 中央 UI -->
         <div id="center-ui" class="flex-1 flex flex-col items-center mx-4 relative">
             <div id="game-timer" class="text-4xl md:text-5xl font-black text-yellow-400 bg-black/80 px-8 py-2 rounded-full border-4 border-yellow-500 shadow-[0_0_20px_rgba(250,204,21,0.6)] mb-2 hidden tracking-wider z-50 transition-colors duration-300">
                 03:00
@@ -273,9 +356,9 @@
 
         <div id="right-stats-box" class="p-3 rounded-2xl text-white shadow-xl w-64 text-right backdrop-blur-md border border-white/20 transition-colors duration-300">
             <div id="right-display-name" class="text-xl font-bold"></div>
-            <div id="right-combo" class="text-yellow-300 text-sm">Combo: 0</div>
-            <div class="h-2 bg-black/30 rounded-full mt-2 overflow-hidden">
-                <div id="right-progress" class="h-full bg-white transition-all w-0"></div>
+            <div id="right-energy-text" class="text-yellow-300 text-sm font-bold">⚡ 能量: 0%</div>
+            <div class="h-3 bg-black/40 rounded-full mt-2 overflow-hidden border border-white/30">
+                <div id="right-progress" class="h-full bg-gradient-to-r from-yellow-300 to-yellow-500 transition-all duration-300 w-0 float-right"></div>
             </div>
         </div>
     </div>
@@ -306,49 +389,72 @@
     </div>
 
     <!-- 底部互動區 -->
-    <div class="absolute bottom-0 w-full flex z-40 px-6 pb-6 gap-6 pt-10 pointer-events-none">
-        <div class="flex-1 flex flex-col items-center justify-end pointer-events-auto">
+    <div class="absolute bottom-0 w-full flex z-40 px-6 pb-6 gap-6 pt-16 pointer-events-none">
+        
+        <!-- 左側互動 -->
+        <div class="flex-1 flex flex-col items-center justify-end pointer-events-auto relative">
+            <button id="left-ult-btn" onclick="castUltimate('left')" class="ult-btn hidden bg-gradient-to-b from-yellow-300 to-yellow-600 text-red-900 border-4 border-white px-8 py-2 rounded-full font-black text-2xl shadow-[0_0_20px_rgba(234,179,8,1)] hover:scale-110 transition-transform">
+                ☄️ 隕石大絕
+            </button>
             <div id="left-question-box" class="bg-white/95 p-6 rounded-[2rem] shadow-2xl w-full max-w-sm border-b-8 relative transition-all duration-300">
                 <div id="left-skill-tag" class="skill-badge hidden"></div>
                 <div id="left-question" class="text-6xl font-black text-gray-800 mb-8 text-center">? + ?</div>
                 <div class="grid grid-cols-2 gap-4" id="left-options"></div>
             </div>
         </div>
-        <div class="flex-1 flex flex-col items-center justify-end pointer-events-auto">
+
+        <!-- 右側互動 -->
+        <div class="flex-1 flex flex-col items-center justify-end pointer-events-auto relative">
+            <button id="right-ult-btn" onclick="castUltimate('right')" class="ult-btn hidden bg-gradient-to-b from-yellow-300 to-yellow-600 text-red-900 border-4 border-white px-8 py-2 rounded-full font-black text-2xl shadow-[0_0_20px_rgba(234,179,8,1)] hover:scale-110 transition-transform">
+                ☄️ 隕石大絕
+            </button>
             <div id="right-question-box" class="bg-white/95 p-6 rounded-[2rem] shadow-2xl w-full max-w-sm border-b-8 relative transition-all duration-300">
                 <div id="right-skill-tag" class="skill-badge hidden"></div>
                 <div id="right-question" class="text-6xl font-black text-gray-800 mb-8 text-center">? + ?</div>
                 <div class="grid grid-cols-2 gap-4" id="right-options"></div>
             </div>
         </div>
+
     </div>
 
     <div class="ground"></div>
 
     <!-- 結算畫面 -->
     <div id="overlay" class="absolute inset-0 bg-black/80 z-50 flex items-center justify-center hidden">
-        <div class="bg-white p-8 md:p-12 rounded-[3rem] text-center max-w-4xl w-11/12 shadow-[0_0_50px_rgba(255,255,255,0.2)] max-h-[95vh] overflow-y-auto">
+        <div class="bg-white p-8 md:p-12 rounded-[3rem] text-center max-w-5xl w-11/12 shadow-[0_0_50px_rgba(255,255,255,0.2)] max-h-[95vh] overflow-y-auto">
             <h2 id="result-title" class="text-5xl md:text-6xl font-bold mb-4"></h2>
             <p id="result-msg" class="text-xl md:text-2xl text-gray-600 mb-8"></p>
 
             <!-- 戰績統計區塊 -->
             <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 hidden">
-                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-200 shadow-inner">
+                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-200 shadow-inner flex flex-col">
                     <h3 id="result-left-name" class="text-2xl font-bold text-blue-800 mb-4 border-b-2 border-blue-200 pb-2">騎士隊</h3>
-                    <div class="flex justify-around text-lg">
+                    <div class="flex justify-around text-lg mb-4">
                         <div class="text-green-600 font-bold">✅ 答對: <span id="left-correct-count" class="text-2xl">0</span></div>
                         <div class="text-red-600 font-bold">❌ 答錯: <span id="left-wrong-count" class="text-2xl">0</span></div>
                     </div>
-                    <div class="mt-4 text-orange-600 font-bold text-xl">💥 總輸出: <span id="left-damage-count">0</span></div>
+                    <div class="text-orange-600 font-bold text-xl mb-4">💥 總輸出: <span id="left-damage-count">0</span></div>
+                    
+                    <!-- 左方錯題本 -->
+                    <div id="left-error-log" class="mt-auto text-left max-h-40 overflow-y-auto bg-white/70 rounded-xl p-3 text-sm hidden border border-blue-100">
+                        <div class="font-bold text-gray-700 mb-2 border-b border-gray-300 pb-1">📝 錯題回顧：</div>
+                        <ul id="left-error-list" class="space-y-1 text-gray-800 font-medium"></ul>
+                    </div>
                 </div>
 
-                <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-200 shadow-inner">
+                <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-200 shadow-inner flex flex-col">
                     <h3 id="result-right-name" class="text-2xl font-bold text-red-800 mb-4 border-b-2 border-red-200 pb-2">法師隊</h3>
-                    <div class="flex justify-around text-lg">
+                    <div class="flex justify-around text-lg mb-4">
                         <div class="text-green-600 font-bold">✅ 答對: <span id="right-correct-count" class="text-2xl">0</span></div>
                         <div class="text-red-600 font-bold">❌ 答錯: <span id="right-wrong-count" class="text-2xl">0</span></div>
                     </div>
-                    <div class="mt-4 text-orange-600 font-bold text-xl">💥 總輸出: <span id="right-damage-count">0</span></div>
+                    <div class="text-orange-600 font-bold text-xl mb-4">💥 總輸出: <span id="right-damage-count">0</span></div>
+                    
+                    <!-- 右方錯題本 -->
+                    <div id="right-error-log" class="mt-auto text-left max-h-40 overflow-y-auto bg-white/70 rounded-xl p-3 text-sm hidden border border-red-100">
+                        <div class="font-bold text-gray-700 mb-2 border-b border-gray-300 pb-1">📝 錯題回顧：</div>
+                        <ul id="right-error-list" class="space-y-1 text-gray-800 font-medium"></ul>
+                    </div>
                 </div>
             </div>
 
@@ -367,6 +473,7 @@
     let ctx = null;
 
     function playSound(type) {
+        if (!state.soundEnabled) return;
         try {
             if (!ctx) ctx = new AudioCtx();
             const osc = ctx.createOscillator();
@@ -395,9 +502,31 @@
                 gain.gain.setValueAtTime(0.15, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
                 osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'ultimate') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(20, now + 1.5);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 1.5);
+                osc.start(now); osc.stop(now + 1.5);
+            } else if (type === 'enrage') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(50, now);
+                osc.frequency.linearRampToValueAtTime(150, now + 1);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 1.5);
+                osc.start(now); osc.stop(now + 1.5);
             }
         } catch(e) {
             console.warn("Audio play blocked", e);
+        }
+    }
+
+    function toggleSound() {
+        state.soundEnabled = !state.soundEnabled;
+        document.getElementById('sound-toggle').innerText = state.soundEnabled ? '🔊' : '🔇';
+        if (state.soundEnabled && !ctx) {
+            try { ctx = new AudioCtx(); ctx.resume(); } catch(e){}
         }
     }
 
@@ -405,37 +534,40 @@
     const state = {
         mode: 'coop',
         mathType: 'add',
-        gameRule: 'hp', // 'hp' 或 'time'
-        timeLimit: 0,   // 秒數
+        gameRule: 'hp', 
+        timeLimit: 0,   
         maxBossHp: 1500,
         bossHp: 1500,
         maxCastleHp: 300,
         leftHp: 300,
         rightHp: 300,
-        leftCombo: 0,
-        rightCombo: 0,
+        leftEnergy: 0,
+        rightEnergy: 0,
         leftFrozen: false,
         rightFrozen: false,
         isGameOver: false,
         bossFrozen: false,
+        isEnraged: false,
         leftName: '',
         rightName: '',
         leftColor: 'blue-500',
         rightColor: 'red-500',
+        soundEnabled: true,
         stats: {
-            left: { correct: 0, wrong: 0, damage: 0 },
-            right: { correct: 0, wrong: 0, damage: 0 }
+            left: { correct: 0, wrong: 0, damage: 0, errors: [] },
+            right: { correct: 0, wrong: 0, damage: 0, errors: [] }
         }
     };
 
     let timerInterval = null;
+    let bossAttackInterval = null;
 
     // --- DOM 快取 ---
     const DOM = {};
     function initDOMCache() {
         ['left', 'right'].forEach(side => {
             DOM[`${side}DisplayName`] = document.getElementById(`${side}-display-name`);
-            DOM[`${side}Combo`] = document.getElementById(`${side}-combo`);
+            DOM[`${side}EnergyTxt`] = document.getElementById(`${side}-energy-text`);
             DOM[`${side}Progress`] = document.getElementById(`${side}-progress`);
             DOM[`${side}StatsBox`] = document.getElementById(`${side}-stats-box`);
             DOM[`${side}CastleWrapper`] = document.getElementById(`${side}-castle-wrapper`);
@@ -445,6 +577,7 @@
             DOM[`${side}Question`] = document.getElementById(`${side}-question`);
             DOM[`${side}Options`] = document.getElementById(`${side}-options`);
             DOM[`${side}SkillTag`] = document.getElementById(`${side}-skill-tag`);
+            DOM[`${side}UltBtn`] = document.getElementById(`${side}-ult-btn`);
         });
         DOM.bossUi = document.getElementById('boss-ui');
         DOM.bossHpBar = document.getElementById('boss-hp-bar');
@@ -454,9 +587,9 @@
         DOM.monsterBox = document.getElementById('monster-box');
         DOM.vsDivider = document.getElementById('vs-divider');
         DOM.gameTimer = document.getElementById('game-timer');
+        DOM.screenAlert = document.getElementById('screen-alert');
     }
 
-    // 選色與模式邏輯
     document.querySelectorAll('.color-dot').forEach(dot => {
         dot.addEventListener('click', () => {
             const parent = dot.parentElement;
@@ -482,17 +615,14 @@
         const btnHp = document.getElementById('btn-rule-hp');
         const btnTime = document.getElementById('btn-rule-time');
         const timeBox = document.getElementById('time-setting-box');
-
         const activeClass = 'bg-purple-600 text-white px-6 py-2 rounded-xl text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(147,51,234,0.5)]';
         const inactiveClass = 'bg-gray-600 text-white px-6 py-2 rounded-xl text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
 
         if (rule === 'hp') {
-            btnHp.className = activeClass;
-            btnTime.className = inactiveClass;
+            btnHp.className = activeClass; btnTime.className = inactiveClass;
             timeBox.classList.add('hidden');
         } else {
-            btnHp.className = inactiveClass;
-            btnTime.className = activeClass;
+            btnHp.className = inactiveClass; btnTime.className = activeClass;
             timeBox.classList.remove('hidden');
         }
     }
@@ -509,24 +639,22 @@
         document.getElementById('start-menu').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('hidden');
 
-        // 判斷血量與計時模式的初始化
         let hpMultiplier = 1;
         if (state.gameRule === 'time') {
             const mins = parseInt(document.getElementById('time-input').value) || 3;
-            hpMultiplier = Math.max(1, mins); // 限時模式下，為確保遊戲不會提早結束，血量根據分鐘數倍增
+            hpMultiplier = Math.max(1.5, mins * 1.5); 
             state.timeLimit = mins * 60;
             DOM.gameTimer.classList.remove('hidden');
             startTimer();
         }
 
-        // 初始化血量
-        state.maxBossHp = 1500 * hpMultiplier;
+        // 大絕招高傷害，血量需相應提升
+        state.maxBossHp = 2500 * hpMultiplier;
         state.bossHp = state.maxBossHp;
-        state.maxCastleHp = 300 * hpMultiplier;
+        state.maxCastleHp = 500 * hpMultiplier;
         state.leftHp = state.maxCastleHp;
         state.rightHp = state.maxCastleHp;
 
-        // 初始化 UI
         DOM.leftDisplayName.innerText = state.leftName;
         DOM.rightDisplayName.innerText = state.rightName;
         DOM.leftCastleLabel.innerText = state.leftName;
@@ -549,7 +677,10 @@
             DOM.leftCastleWrapper.style.left = '50%';
             DOM.leftCastleWrapper.style.transform = 'translateX(-50%)';
             DOM.leftCastleLabel.innerText = "守護城堡";
-            DOM.bossHpText.innerText = `${state.bossHp} / ${state.maxBossHp}`;
+            DOM.bossHpText.innerText = `${Math.floor(state.bossHp)} / ${state.maxBossHp}`;
+            
+            // 啟動巨魔自動攻擊循環 (合作模式限定)
+            startBossPassiveAttack();
         }
 
         updateQuestion('left');
@@ -557,28 +688,18 @@
         updateUI();
     }
 
-    // --- 計時器邏輯 ---
+    // --- 計時器 ---
     function startTimer() {
         updateTimerDisplay();
         timerInterval = setInterval(() => {
-            if (state.isGameOver) {
-                clearInterval(timerInterval);
-                return;
-            }
-            
+            if (state.isGameOver) { clearInterval(timerInterval); return; }
             state.timeLimit--;
             updateTimerDisplay();
-
-            // 最後 10 秒特效
             if (state.timeLimit <= 10 && state.timeLimit > 0) {
                 DOM.gameTimer.classList.add('text-red-500', 'border-red-500', 'timer-pulse');
                 DOM.gameTimer.classList.remove('text-yellow-400', 'border-yellow-500');
             }
-
-            if (state.timeLimit <= 0) {
-                clearInterval(timerInterval);
-                handleTimeUp();
-            }
+            if (state.timeLimit <= 0) { clearInterval(timerInterval); handleTimeUp(); }
         }, 1000);
     }
 
@@ -588,54 +709,67 @@
         DOM.gameTimer.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
 
-    function handleTimeUp() {
-        if (state.isGameOver) return;
-        state.isGameOver = true;
+    // --- 狂暴與巨魔自動攻擊 ---
+    function startBossPassiveAttack() {
+        if (bossAttackInterval) clearInterval(bossAttackInterval);
+        // 正常狀態每 5 秒攻擊一次，狂暴後每 2.5 秒攻擊一次，並帶有隨機烏雲
+        const interval = state.isEnraged ? 2500 : 5000;
+        
+        bossAttackInterval = setInterval(() => {
+            if (state.isGameOver || state.bossFrozen) return;
+            
+            // 隨機攻擊左邊或右邊 (這裡合作模式雖然只有一個城堡，但可以營造從不同方向砸下來的感覺)
+            monsterAttack();
 
-        let msg = '';
-        const title = '⏱️ 時間到！';
-
-        if (state.mode === 'vs') {
-            // 比較血量 -> 若血量一樣則比較傷害
-            if (state.leftHp > state.rightHp) {
-                msg = `${state.leftName} 剩餘血量較多，獲得最終勝利！`;
-            } else if (state.rightHp > state.leftHp) {
-                msg = `${state.rightName} 剩餘血量較多，獲得最終勝利！`;
-            } else {
-                if (state.stats.left.damage > state.stats.right.damage) {
-                     msg = `血量平手！${state.leftName} 總輸出較高，獲得勝利！`;
-                } else if (state.stats.right.damage > state.stats.left.damage) {
-                     msg = `血量平手！${state.rightName} 總輸出較高，獲得勝利！`;
-                } else {
-                     msg = `完全平手！真是精彩的勢均力敵！`;
-                }
+            // 狂暴模式下有 60% 機率對答題區施放烏雲
+            if (state.isEnraged && Math.random() < 0.6) {
+                const targetSide = Math.random() < 0.5 ? 'left' : 'right';
+                spawnDarkCloud(targetSide);
             }
-        } else {
-            msg = `時間耗盡！你們總共對巨魔造成了 ${state.stats.left.damage + state.stats.right.damage} 點傷害！`;
-        }
-
-        endGame(true, msg, title);
+        }, interval);
     }
 
-    // --- 粒子特效與作答系統 ---
-    function createParticles(x, y) {
-        for (let i = 0; i < 12; i++) {
-            const p = document.createElement('div');
-            p.className = 'particle';
-            p.style.backgroundColor = `hsl(${Math.random()*360}, 70%, 60%)`;
-            p.style.width = Math.random() * 8 + 4 + 'px';
-            p.style.height = p.style.width;
-            p.style.left = x + 'px';
-            p.style.top = y + 'px';
-            const tx = (Math.random() - 0.5) * 150;
-            const ty = (Math.random() - 0.5) * 150;
-            p.style.setProperty('--tx', `${tx}px`);
-            p.style.setProperty('--ty', `${ty}px`);
-            document.body.appendChild(p);
-            setTimeout(() => p.remove(), 800);
+    function checkEnrage() {
+        if (state.mode !== 'coop' || state.isEnraged || state.isGameOver) return;
+        
+        if (state.bossHp <= state.maxBossHp * 0.3) {
+            state.isEnraged = true;
+            playSound('enrage');
+            DOM.bossSprite.classList.add('boss-enraged');
+            
+            // 畫面警告
+            DOM.screenAlert.classList.add('alert-show');
+            setTimeout(() => DOM.screenAlert.classList.remove('alert-show'), 2000);
+            
+            // 重置並加快攻擊頻率
+            startBossPassiveAttack();
+            
+            // 立即給雙方施放烏雲作為狂暴開場
+            spawnDarkCloud('left');
+            spawnDarkCloud('right');
         }
     }
 
+    function spawnDarkCloud(side) {
+        const qBox = DOM[`${side}QuestionBox`];
+        if (qBox.querySelector('.dark-cloud')) return; // 已有烏雲就不重複放
+
+        const cloud = document.createElement('div');
+        cloud.className = 'dark-cloud absolute -inset-2 z-[45] bg-gray-900/95 rounded-[2rem] flex items-center justify-center text-8xl cursor-pointer select-none';
+        cloud.innerText = '☁️';
+        // 點擊驅散烏雲
+        cloud.onclick = function(e) {
+            e.stopPropagation();
+            playSound('correct'); // 播放小音效給回饋
+            this.style.opacity = '0';
+            this.style.transform = 'scale(1.2)';
+            this.style.transition = 'all 0.3s ease-out';
+            setTimeout(() => this.remove(), 300);
+        };
+        qBox.appendChild(cloud);
+    }
+
+    // --- 作答系統 ---
     function generateQuestion() {
         let a, b, ans;
         if (state.mathType === 'add') {
@@ -651,11 +785,8 @@
         let opts = new Set([ans]);
         let attempts = 0;
         while (opts.size < 4 && attempts < 50) {
-            let f = state.mathType === 'add' 
-                ? Math.floor(Math.random() * 18) + 1 
-                : Math.floor(Math.random() * 10);
-            opts.add(f);
-            attempts++;
+            let f = state.mathType === 'add' ? Math.floor(Math.random() * 18) + 1 : Math.floor(Math.random() * 10);
+            opts.add(f); attempts++;
         }
         
         let finalOpts = Array.from(opts);
@@ -705,21 +836,22 @@
             btn.onclick = (e) => {
                 if(btn.disabled) return;
                 Array.from(optEl.children).forEach(b => b.disabled = true);
-                handleAnswer(side, opt, data.a, data.type, e);
+                handleAnswer(side, opt, data.a, data.q, data.type, e);
             };
             optEl.appendChild(btn);
         });
     }
 
-    function handleAnswer(side, picked, correct, type, event) {
+    function handleAnswer(side, picked, correct, question, type, event) {
         if (state.isGameOver) return;
 
         if (picked === correct) {
             playSound('correct');
             createParticles(event.clientX, event.clientY);
-            const combo = side === 'left' ? ++state.leftCombo : ++state.rightCombo;
-            const damage = Math.floor(20 * (combo >= 3 ? 1.5 : 1));
-
+            
+            // 能量增加 20%
+            state[`${side}Energy`] = Math.min(100, state[`${side}Energy`] + 20);
+            const damage = 25; 
             state.stats[side].correct++;
             state.stats[side].damage += damage;
 
@@ -730,29 +862,31 @@
             }
             if (type === 'heal') {
                 playSound('skill');
-                state[side + 'Hp'] = Math.min(state.maxCastleHp, state[side + 'Hp'] + 30);
+                state[side + 'Hp'] = Math.min(state.maxCastleHp, state[side + 'Hp'] + 40);
             }
 
             if (state.mode === 'vs') {
                 const target = side === 'left' ? 'right' : 'left';
                 state[target + 'Hp'] = Math.max(0, state[target + 'Hp'] - damage);
-                createProjectile(side, target, combo >= 3);
+                createProjectile(side, target, false);
             } else {
                 state.bossHp = Math.max(0, state.bossHp - damage);
-                createProjectile(side, 'boss', combo >= 3);
+                createProjectile(side, 'boss', false);
+                checkEnrage();
             }
         } else {
             playSound('wrong');
-            if (side === 'left') state.leftCombo = 0; else state.rightCombo = 0;
+            // 答錯扣除少許能量 (不直接歸零，保持成就感)
+            state[`${side}Energy`] = Math.max(0, state[`${side}Energy`] - 10);
             state.stats[side].wrong++;
+            state.stats[side].errors.push({ q: question, picked: picked, correct: correct });
 
             if (state.mode === 'vs') {
-                state[side + 'Hp'] = Math.max(0, state[side + 'Hp'] - 15);
+                state[side + 'Hp'] = Math.max(0, state[side + 'Hp'] - 20);
                 DOM[`${side}CastleWrapper`].classList.add('shake');
                 setTimeout(() => DOM[`${side}CastleWrapper`].classList.remove('shake'), 400);
             } else {
-                state.leftHp = Math.max(0, state.leftHp - 20);
-                if (!state.bossFrozen) monsterAttack();
+                state.leftHp = Math.max(0, state.leftHp - 25);
             }
         }
 
@@ -761,6 +895,68 @@
         if(!state.isGameOver) updateQuestion(side);
     }
 
+    // --- 大絕招系統 ---
+    function castUltimate(side) {
+        if (state.isGameOver || state[`${side}Energy`] < 100) return;
+        
+        state[`${side}Energy`] = 0; // 清空能量
+        DOM[`${side}UltBtn`].classList.add('hidden'); // 隱藏按鈕
+        playSound('ultimate');
+
+        const isVs = state.mode === 'vs';
+        const targetSide = side === 'left' ? 'right' : 'left';
+        
+        // 生成多顆隕石動畫
+        for(let i=0; i<8; i++) {
+            setTimeout(() => {
+                const m = document.createElement('div');
+                m.className = 'meteor';
+                m.innerText = '☄️';
+                
+                // 起點：畫面頂部隨機位置
+                const startX = (Math.random() * window.innerWidth) - 50;
+                m.style.setProperty('--sx', `${startX}px`);
+                
+                // 終點：目標中心附近
+                let ex, ey;
+                if (isVs) {
+                    const rect = DOM[`${targetSide}CastleWrapper`].getBoundingClientRect();
+                    ex = rect.left + (Math.random() * rect.width) - 40;
+                    ey = rect.top + (Math.random() * rect.height);
+                } else {
+                    const rect = DOM.monsterBox.getBoundingClientRect();
+                    ex = rect.left + (Math.random() * 200) - 50;
+                    ey = rect.top + (Math.random() * 200) - 50;
+                }
+                m.style.setProperty('--ex', `${ex}px`);
+                m.style.setProperty('--ey', `${ey}px`);
+                
+                document.body.appendChild(m);
+                setTimeout(() => m.remove(), 750);
+            }, i * 100);
+        }
+
+        // 延遲造成巨大傷害 (等動畫落地)
+        setTimeout(() => {
+            const ultDamage = 150;
+            state.stats[side].damage += ultDamage;
+            
+            if (isVs) {
+                state[`${targetSide}Hp`] = Math.max(0, state[`${targetSide}Hp`] - ultDamage);
+                DOM[`${targetSide}CastleWrapper`].classList.add('shake');
+                setTimeout(() => DOM[`${targetSide}CastleWrapper`].classList.remove('shake'), 400);
+            } else {
+                state.bossHp = Math.max(0, state.bossHp - ultDamage * 2); // 打王兩倍傷害，約300
+                DOM.bossSprite.classList.add('shake');
+                setTimeout(() => DOM.bossSprite.classList.remove('shake'), 400);
+                checkEnrage();
+            }
+            updateUI();
+            checkGameOver();
+        }, 600);
+    }
+
+    // --- 技能與特效 ---
     function applyPlayerFreeze(side) {
         state[side + 'Frozen'] = true;
         const qBox = DOM[`${side}QuestionBox`];
@@ -784,7 +980,11 @@
             if (sec <= 0 || state.isGameOver) {
                 clearInterval(itv);
                 state.bossFrozen = false;
+                // 恢復原狀，如果是狂暴中要還原狂暴的 CSS
                 DOM.bossSprite.style.filter = '';
+                if(state.isEnraged) {
+                    DOM.bossSprite.classList.add('boss-enraged'); // 重新套用狂暴 class 會蓋過 filter
+                }
                 DOM.freezeTimer.classList.add('hidden');
             }
         }, 100);
@@ -829,6 +1029,24 @@
         }, 550);
     }
 
+    function createParticles(x, y) {
+        for (let i = 0; i < 12; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.backgroundColor = `hsl(${Math.random()*360}, 70%, 60%)`;
+            p.style.width = Math.random() * 8 + 4 + 'px';
+            p.style.height = p.style.width;
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            const tx = (Math.random() - 0.5) * 150;
+            const ty = (Math.random() - 0.5) * 150;
+            p.style.setProperty('--tx', `${tx}px`);
+            p.style.setProperty('--ty', `${ty}px`);
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 800);
+        }
+    }
+
     function monsterAttack() {
         const f = document.createElement('div');
         f.className = 'projectile';
@@ -839,7 +1057,6 @@
 
         const target = DOM.leftCastleWrapper;
         const rect = target.getBoundingClientRect();
-        
         if(rect.width === 0) { f.remove(); return; }
 
         setTimeout(() => {
@@ -850,11 +1067,15 @@
 
         setTimeout(() => {
             if (f.parentNode) f.remove();
+            state.leftHp = Math.max(0, state.leftHp - (state.isEnraged ? 30 : 15));
+            updateUI();
+            checkGameOver();
             target.classList.add('shake');
             setTimeout(() => target.classList.remove('shake'), 400);
         }, 600);
     }
 
+    // --- 介面更新與結算 ---
     function getHpColorClass(percent) {
         if (percent < 30) return 'bg-red-500';
         if (percent < 60) return 'bg-yellow-500';
@@ -864,7 +1085,7 @@
     function updateUI() {
         if (state.mode === 'coop') {
             DOM.bossHpBar.style.width = (state.bossHp / state.maxBossHp * 100) + '%';
-            DOM.bossHpText.innerText = `${state.bossHp} / ${state.maxBossHp}`;
+            DOM.bossHpText.innerText = `${Math.floor(state.bossHp)} / ${state.maxBossHp}`;
             
             const leftPct = (state.leftHp / state.maxCastleHp) * 100;
             DOM.leftCastleHpBar.style.width = leftPct + '%';
@@ -872,42 +1093,67 @@
         } else {
             const leftPct = (state.leftHp / state.maxCastleHp) * 100;
             const rightPct = (state.rightHp / state.maxCastleHp) * 100;
-            
             DOM.leftCastleHpBar.style.width = leftPct + '%';
             DOM.leftCastleHpBar.className = `h-full w-full transition-all duration-300 ${getHpColorClass(leftPct)}`;
-            
             DOM.rightCastleHpBar.style.width = rightPct + '%';
             DOM.rightCastleHpBar.className = `h-full w-full transition-all duration-300 ${getHpColorClass(rightPct)}`;
         }
 
-        DOM.leftCombo.innerText = `Combo: ${state.leftCombo}`;
-        DOM.rightCombo.innerText = `Combo: ${state.rightCombo}`;
-        DOM.leftProgress.style.width = Math.min(100, state.leftCombo * 10) + '%';
-        DOM.rightProgress.style.width = Math.min(100, state.rightCombo * 10) + '%';
+        // 更新能量條 UI 與大絕按鈕顯示
+        ['left', 'right'].forEach(side => {
+            const energy = state[`${side}Energy`];
+            DOM[`${side}EnergyTxt`].innerText = `⚡ 能量: ${energy}%`;
+            DOM[`${side}Progress`].style.width = `${energy}%`;
+            
+            if(energy >= 100 && !state.isGameOver) {
+                DOM[`${side}UltBtn`].classList.remove('hidden');
+                DOM[`${side}EnergyTxt`].classList.add('text-red-400', 'animate-pulse');
+            } else {
+                DOM[`${side}UltBtn`].classList.add('hidden');
+                DOM[`${side}EnergyTxt`].classList.remove('text-red-400', 'animate-pulse');
+            }
+        });
     }
 
     function checkGameOver() {
         if (state.isGameOver) return;
-
-        // 如果在限時模式中提早將血量歸零，判定為 K.O.
         if (state.mode === 'coop') {
-            if (state.bossHp <= 0) endGame(true, '勝利！全班成功守護了城堡！(提早擊殺)');
+            if (state.bossHp <= 0) endGame(true, '勝利！全班成功擊敗了巨魔！');
             else if (state.leftHp <= 0) endGame(false, '失敗！巨魔摧毀了城堡...');
         } else {
-            if (state.leftHp <= 0) endGame(true, `${state.rightName} 獲勝！(K.O. 擊倒對手)`);
-            else if (state.rightHp <= 0) endGame(true, `${state.leftName} 獲勝！(K.O. 擊倒對手)`);
+            if (state.leftHp <= 0) endGame(true, `${state.rightName} 獲勝！(擊毀對手)`);
+            else if (state.rightHp <= 0) endGame(true, `${state.leftName} 獲勝！(擊毀對手)`);
         }
+    }
+
+    function handleTimeUp() {
+        if (state.isGameOver) return;
+        state.isGameOver = true;
+
+        let msg = '';
+        if (state.mode === 'vs') {
+            if (state.leftHp > state.rightHp) msg = `${state.leftName} 剩餘血量較多，獲得勝利！`;
+            else if (state.rightHp > state.leftHp) msg = `${state.rightName} 剩餘血量較多，獲得勝利！`;
+            else {
+                if (state.stats.left.damage > state.stats.right.damage) msg = `血量平手！${state.leftName} 總輸出較高勝出！`;
+                else if (state.stats.right.damage > state.stats.left.damage) msg = `血量平手！${state.rightName} 總輸出較高勝出！`;
+                else msg = `完全平手！精彩的對決！`;
+            }
+        } else {
+            msg = `時間耗盡！你們總共對巨魔造成了 ${state.stats.left.damage + state.stats.right.damage} 點傷害！`;
+        }
+        endGame(true, msg, '⏱️ 時間到！');
     }
 
     function endGame(isWin, msg, customTitle = null) {
         state.isGameOver = true;
-        if (timerInterval) clearInterval(timerInterval); // 停止計時器
+        if (timerInterval) clearInterval(timerInterval);
+        if (bossAttackInterval) clearInterval(bossAttackInterval);
 
         document.getElementById('overlay').classList.remove('hidden');
         document.getElementById('result-title').innerText = customTitle || (isWin ? '🏆 戰鬥結束' : '❌ 挑戰結束');
         document.getElementById('result-msg').innerText = msg;
 
-        // 顯示統計資料
         document.getElementById('stats-container').classList.remove('hidden');
         document.getElementById('result-left-name').innerText = state.leftName;
         document.getElementById('left-correct-count').innerText = state.stats.left.correct;
@@ -919,15 +1165,30 @@
         document.getElementById('right-wrong-count').innerText = state.stats.right.wrong;
         document.getElementById('right-damage-count').innerText = state.stats.right.damage;
 
-        // 鼓勵小語
+        // 渲染錯題本
+        ['left', 'right'].forEach(side => {
+            const errors = state.stats[side].errors;
+            const container = document.getElementById(`${side}-error-log`);
+            const list = document.getElementById(`${side}-error-list`);
+            if (errors.length > 0) {
+                container.classList.remove('hidden');
+                list.innerHTML = errors.map(err => 
+                    `<li><span class="inline-block w-[4.5rem] text-right mr-2">${err.q} =</span> 
+                    <span class="text-red-500 line-through mr-2">${err.picked}</span> 
+                    <span class="text-green-600 font-bold">✔️ ${err.correct}</span></li>`
+                ).join('');
+            } else {
+                container.classList.add('hidden');
+            }
+        });
+
         const encMsgEl = document.getElementById('encouragement-msg');
         encMsgEl.classList.remove('hidden');
-        
         let encMsg = "";
         if (state.mode === 'coop') {
-            encMsg = isWin ? "完美的團隊合作！巨魔完全不是你們的對手！🎉" : "差一點點就成功了！再挑戰一次，你們一定能打敗牠！💪";
+            encMsg = isWin ? "完美的團隊合作！你們連狂暴巨魔都能打敗！🎉" : "差一點點就成功了！狂暴巨魔非常強大，下次一定能贏！💪";
         } else {
-            encMsg = "真是一場勢均力敵的頂尖對決！雙方都展現了驚人的數學實力！🔥";
+            encMsg = "真是一場勢均力敵的頂尖對決！雙方的大絕招都太震撼了！🔥";
         }
         encMsgEl.innerText = encMsg;
     }
