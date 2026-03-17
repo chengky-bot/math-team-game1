@@ -62,7 +62,7 @@
         /* 怪物樣式 */
         .monster-container {
             position: absolute;
-            top: 30%;
+            top: 35%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 5;
@@ -128,8 +128,8 @@
             opacity: 0.6;
             pointer-events: none;
             transform: scale(0.95);
-            background-color: #e0f2fe !important; /* sky-100 */
-            border-color: #7dd3fc !important; /* sky-300 */
+            background-color: #e0f2fe !important;
+            border-color: #7dd3fc !important;
             position: relative;
         }
         .disabled-btn::after {
@@ -160,29 +160,55 @@
             background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent);
             z-index: 5;
         }
+
+        /* 計時器動畫 */
+        .timer-pulse {
+            animation: timerPulse 1s infinite alternate;
+        }
+        @keyframes timerPulse {
+            0% { transform: scale(1); box-shadow: 0 0 15px rgba(239,68,68,0.5); }
+            100% { transform: scale(1.05); box-shadow: 0 0 30px rgba(239,68,68,0.9); }
+        }
     </style>
 </head>
 <body>
 
 <!-- 開始菜單 -->
-<div id="start-menu" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-white text-center">
-    <div class="mb-4 text-8xl animate-pulse">⚔️</div>
-    <h1 class="text-7xl font-bold mb-4 drop-shadow-lg text-yellow-400">數學守護者</h1>
-    <p class="mb-6 text-xl text-blue-200">選擇運算類型與模式，擊碎對手或巨魔吧！</p>
+<div id="start-menu" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-white text-center overflow-y-auto">
+    <div class="mb-2 text-6xl animate-pulse">⚔️</div>
+    <h1 class="text-6xl font-bold mb-4 drop-shadow-lg text-yellow-400">數學守護者</h1>
+    <p class="mb-6 text-lg text-blue-200">選擇模式、決定勝負條件，開始史詩級的數學對決！</p>
     
-    <!-- 運算選擇 -->
-    <div class="flex justify-center gap-4 mb-8 w-full max-w-2xl">
-        <div class="bg-white/10 p-3 rounded-2xl backdrop-blur-xl border border-white/20 flex gap-4 w-full justify-center items-center shadow-lg">
-            <span class="text-2xl font-bold mr-2 text-white drop-shadow-md">運算類型:</span>
-            <button id="btn-add" onclick="selectMath('add')" class="bg-yellow-500 text-black px-8 py-3 rounded-xl text-2xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]">➕ 加法</button>
-            <button id="btn-sub" onclick="selectMath('sub')" class="bg-gray-600 text-white px-8 py-3 rounded-xl text-2xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➖ 減法</button>
+    <!-- 勝負條件與時間設定 -->
+    <div class="flex flex-col items-center mb-6 w-full max-w-2xl">
+        <div class="bg-white/10 p-5 rounded-3xl backdrop-blur-xl border border-white/20 w-full shadow-lg">
+            <div class="flex justify-center items-center gap-4 mb-4">
+                <span class="text-xl font-bold mr-2 text-white drop-shadow-md">勝負模式:</span>
+                <button id="btn-rule-hp" onclick="selectRule('hp')" class="bg-purple-600 text-white px-6 py-2 rounded-xl text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(147,51,234,0.5)]">🩸 預設血量</button>
+                <button id="btn-rule-time" onclick="selectRule('time')" class="bg-gray-600 text-white px-6 py-2 rounded-xl text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">⏱️ 限時挑戰</button>
+            </div>
+            
+            <div id="time-setting-box" class="hidden flex justify-center items-center gap-4 transition-all duration-300">
+                <span class="text-xl text-yellow-300 font-bold">遊戲時間:</span>
+                <input type="number" id="time-input" value="3" min="1" max="15" class="w-20 text-center text-black font-bold text-2xl rounded-lg outline-none border-4 border-yellow-400 bg-yellow-50 py-1">
+                <span class="text-xl text-white font-bold">分鐘</span>
+            </div>
         </div>
     </div>
 
-    <div class="flex gap-8 mb-12 w-full max-w-4xl">
-        <!-- 隊伍設定 -->
-        <div class="bg-white/10 p-6 rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
-            <div class="flex items-center justify-center mb-4 text-2xl">
+    <!-- 運算選擇 -->
+    <div class="flex justify-center gap-4 mb-6 w-full max-w-2xl">
+        <div class="bg-white/10 p-3 rounded-2xl backdrop-blur-xl border border-white/20 flex gap-4 w-full justify-center items-center shadow-lg">
+            <span class="text-xl font-bold mr-2 text-white drop-shadow-md">運算類型:</span>
+            <button id="btn-add" onclick="selectMath('add')" class="bg-yellow-500 text-black px-6 py-2 rounded-xl text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]">➕ 加法</button>
+            <button id="btn-sub" onclick="selectMath('sub')" class="bg-gray-600 text-white px-6 py-2 rounded-xl text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➖ 減法</button>
+        </div>
+    </div>
+
+    <!-- 隊伍設定 -->
+    <div class="flex gap-6 mb-8 w-full max-w-4xl">
+        <div class="bg-white/10 p-5 rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
+            <div class="flex items-center justify-center mb-4 text-xl">
                 <input id="left-name-input" type="text" placeholder="騎士" value="騎士" class="bg-transparent border-b-2 border-blue-400 outline-none w-1/2 text-center placeholder-white/50">
                 <span class="ml-2 font-bold">隊</span>
             </div>
@@ -193,8 +219,8 @@
             </div>
         </div>
 
-        <div class="bg-white/10 p-6 rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
-            <div class="flex items-center justify-center mb-4 text-2xl">
+        <div class="bg-white/10 p-5 rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
+            <div class="flex items-center justify-center mb-4 text-xl">
                 <input id="right-name-input" type="text" placeholder="法師" value="法師" class="bg-transparent border-b-2 border-red-400 outline-none w-1/2 text-center placeholder-white/50">
                 <span class="ml-2 font-bold">隊</span>
             </div>
@@ -206,11 +232,12 @@
         </div>
     </div>
 
+    <!-- 啟動按鈕 -->
     <div class="flex gap-6">
-        <button onclick="startGame('coop')" class="bg-green-500 hover:bg-green-400 px-12 py-5 rounded-2xl text-2xl font-bold shadow-xl transition transform hover:scale-105">
+        <button onclick="startGame('coop')" class="bg-green-500 hover:bg-green-400 px-10 py-4 rounded-2xl text-2xl font-bold shadow-xl transition transform hover:scale-105">
             🤝 合作擊王
         </button>
-        <button onclick="startGame('vs')" class="bg-red-600 hover:bg-red-500 px-12 py-5 rounded-2xl text-2xl font-bold shadow-xl transition transform hover:scale-105">
+        <button onclick="startGame('vs')" class="bg-red-600 hover:bg-red-500 px-10 py-4 rounded-2xl text-2xl font-bold shadow-xl transition transform hover:scale-105">
             ⚔️ 巔峰對戰
         </button>
     </div>
@@ -228,13 +255,20 @@
             </div>
         </div>
 
-        <div id="boss-ui" class="flex-1 max-w-md mx-4 text-center">
-            <div id="boss-label" class="text-red-300 font-bold mb-1">森林巨魔 HP</div>
-            <div class="h-8 bg-black/50 rounded-full border-2 border-white/30 overflow-hidden relative shadow-inner">
-                <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300 w-full"></div>
-                <div id="boss-hp-text" class="absolute inset-0 flex items-center justify-center text-white text-sm font-bold drop-shadow-md">1500 / 1500</div>
+        <!-- 中央 UI (計時器與王血條) -->
+        <div id="center-ui" class="flex-1 flex flex-col items-center mx-4 relative">
+            <div id="game-timer" class="text-4xl md:text-5xl font-black text-yellow-400 bg-black/80 px-8 py-2 rounded-full border-4 border-yellow-500 shadow-[0_0_20px_rgba(250,204,21,0.6)] mb-2 hidden tracking-wider z-50 transition-colors duration-300">
+                03:00
             </div>
-            <div id="freeze-timer" class="text-cyan-400 font-bold mt-1 text-sm hidden">❄️ 已冰凍 7.0s</div>
+            
+            <div id="boss-ui" class="w-full max-w-md text-center mt-2">
+                <div id="boss-label" class="text-red-300 font-bold mb-1">森林巨魔 HP</div>
+                <div class="h-8 bg-black/50 rounded-full border-2 border-white/30 overflow-hidden relative shadow-inner">
+                    <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300 w-full"></div>
+                    <div id="boss-hp-text" class="absolute inset-0 flex items-center justify-center text-white text-sm font-bold drop-shadow-md">1500 / 1500</div>
+                </div>
+                <div id="freeze-timer" class="text-cyan-400 font-bold mt-1 text-sm hidden">❄️ 已冰凍 7.0s</div>
+            </div>
         </div>
 
         <div id="right-stats-box" class="p-3 rounded-2xl text-white shadow-xl w-64 text-right backdrop-blur-md border border-white/20 transition-colors duration-300">
@@ -363,7 +397,7 @@
                 osc.start(now); osc.stop(now + 0.4);
             }
         } catch(e) {
-            console.warn("Audio play blocked or failed", e);
+            console.warn("Audio play blocked", e);
         }
     }
 
@@ -371,6 +405,8 @@
     const state = {
         mode: 'coop',
         mathType: 'add',
+        gameRule: 'hp', // 'hp' 或 'time'
+        timeLimit: 0,   // 秒數
         maxBossHp: 1500,
         bossHp: 1500,
         maxCastleHp: 300,
@@ -392,7 +428,9 @@
         }
     };
 
-    // --- DOM 快取 (架構優化) ---
+    let timerInterval = null;
+
+    // --- DOM 快取 ---
     const DOM = {};
     function initDOMCache() {
         ['left', 'right'].forEach(side => {
@@ -415,9 +453,10 @@
         DOM.freezeTimer = document.getElementById('freeze-timer');
         DOM.monsterBox = document.getElementById('monster-box');
         DOM.vsDivider = document.getElementById('vs-divider');
+        DOM.gameTimer = document.getElementById('game-timer');
     }
 
-    // 選色邏輯
+    // 選色與模式邏輯
     document.querySelectorAll('.color-dot').forEach(dot => {
         dot.addEventListener('click', () => {
             const parent = dot.parentElement;
@@ -432,19 +471,36 @@
         state.mathType = type;
         const btnAdd = document.getElementById('btn-add');
         const btnSub = document.getElementById('btn-sub');
-        
-        const activeClass = 'bg-yellow-500 text-black px-8 py-3 rounded-xl text-2xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]';
-        const inactiveClass = 'bg-gray-600 text-white px-8 py-3 rounded-xl text-2xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
-
+        const activeClass = 'bg-yellow-500 text-black px-6 py-2 rounded-xl text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]';
+        const inactiveClass = 'bg-gray-600 text-white px-6 py-2 rounded-xl text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
         btnAdd.className = type === 'add' ? activeClass : inactiveClass;
         btnSub.className = type === 'sub' ? activeClass : inactiveClass;
     }
 
+    function selectRule(rule) {
+        state.gameRule = rule;
+        const btnHp = document.getElementById('btn-rule-hp');
+        const btnTime = document.getElementById('btn-rule-time');
+        const timeBox = document.getElementById('time-setting-box');
+
+        const activeClass = 'bg-purple-600 text-white px-6 py-2 rounded-xl text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(147,51,234,0.5)]';
+        const inactiveClass = 'bg-gray-600 text-white px-6 py-2 rounded-xl text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
+
+        if (rule === 'hp') {
+            btnHp.className = activeClass;
+            btnTime.className = inactiveClass;
+            timeBox.classList.add('hidden');
+        } else {
+            btnHp.className = inactiveClass;
+            btnTime.className = activeClass;
+            timeBox.classList.remove('hidden');
+        }
+    }
+
     function startGame(mode) {
-        initDOMCache(); // 初始化 DOM 引用
+        initDOMCache();
         state.mode = mode;
         
-        // 健壯性：防止空字串輸入
         const leftInput = document.getElementById('left-name-input').value.trim();
         const rightInput = document.getElementById('right-name-input').value.trim();
         state.leftName = (leftInput || '騎士') + '隊';
@@ -452,6 +508,23 @@
         
         document.getElementById('start-menu').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('hidden');
+
+        // 判斷血量與計時模式的初始化
+        let hpMultiplier = 1;
+        if (state.gameRule === 'time') {
+            const mins = parseInt(document.getElementById('time-input').value) || 3;
+            hpMultiplier = Math.max(1, mins); // 限時模式下，為確保遊戲不會提早結束，血量根據分鐘數倍增
+            state.timeLimit = mins * 60;
+            DOM.gameTimer.classList.remove('hidden');
+            startTimer();
+        }
+
+        // 初始化血量
+        state.maxBossHp = 1500 * hpMultiplier;
+        state.bossHp = state.maxBossHp;
+        state.maxCastleHp = 300 * hpMultiplier;
+        state.leftHp = state.maxCastleHp;
+        state.rightHp = state.maxCastleHp;
 
         // 初始化 UI
         DOM.leftDisplayName.innerText = state.leftName;
@@ -481,9 +554,70 @@
 
         updateQuestion('left');
         updateQuestion('right');
-        updateUI(); // 確保初始血條正確渲染
+        updateUI();
     }
 
+    // --- 計時器邏輯 ---
+    function startTimer() {
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+            if (state.isGameOver) {
+                clearInterval(timerInterval);
+                return;
+            }
+            
+            state.timeLimit--;
+            updateTimerDisplay();
+
+            // 最後 10 秒特效
+            if (state.timeLimit <= 10 && state.timeLimit > 0) {
+                DOM.gameTimer.classList.add('text-red-500', 'border-red-500', 'timer-pulse');
+                DOM.gameTimer.classList.remove('text-yellow-400', 'border-yellow-500');
+            }
+
+            if (state.timeLimit <= 0) {
+                clearInterval(timerInterval);
+                handleTimeUp();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(state.timeLimit / 60);
+        const s = state.timeLimit % 60;
+        DOM.gameTimer.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function handleTimeUp() {
+        if (state.isGameOver) return;
+        state.isGameOver = true;
+
+        let msg = '';
+        const title = '⏱️ 時間到！';
+
+        if (state.mode === 'vs') {
+            // 比較血量 -> 若血量一樣則比較傷害
+            if (state.leftHp > state.rightHp) {
+                msg = `${state.leftName} 剩餘血量較多，獲得最終勝利！`;
+            } else if (state.rightHp > state.leftHp) {
+                msg = `${state.rightName} 剩餘血量較多，獲得最終勝利！`;
+            } else {
+                if (state.stats.left.damage > state.stats.right.damage) {
+                     msg = `血量平手！${state.leftName} 總輸出較高，獲得勝利！`;
+                } else if (state.stats.right.damage > state.stats.left.damage) {
+                     msg = `血量平手！${state.rightName} 總輸出較高，獲得勝利！`;
+                } else {
+                     msg = `完全平手！真是精彩的勢均力敵！`;
+                }
+            }
+        } else {
+            msg = `時間耗盡！你們總共對巨魔造成了 ${state.stats.left.damage + state.stats.right.damage} 點傷害！`;
+        }
+
+        endGame(true, msg, title);
+    }
+
+    // --- 粒子特效與作答系統 ---
     function createParticles(x, y) {
         for (let i = 0; i < 12; i++) {
             const p = document.createElement('div');
@@ -505,18 +639,17 @@
     function generateQuestion() {
         let a, b, ans;
         if (state.mathType === 'add') {
-            a = Math.floor(Math.random() * 9) + 1; // 1~9
-            b = Math.floor(Math.random() * 9) + 1; // 1~9
+            a = Math.floor(Math.random() * 9) + 1;
+            b = Math.floor(Math.random() * 9) + 1;
             ans = a + b;
         } else {
-            ans = Math.floor(Math.random() * 10); // 答案 0~9
-            b = Math.floor(Math.random() * 9) + 1; // 減數 1~9
-            a = ans + b; // 被減數 1~18
+            ans = Math.floor(Math.random() * 10);
+            b = Math.floor(Math.random() * 9) + 1;
+            a = ans + b;
         }
 
         let opts = new Set([ans]);
         let attempts = 0;
-        // 防呆保護：避免無限迴圈
         while (opts.size < 4 && attempts < 50) {
             let f = state.mathType === 'add' 
                 ? Math.floor(Math.random() * 18) + 1 
@@ -547,9 +680,8 @@
         const tagEl = DOM[`${side}SkillTag`];
 
         qEl.innerText = data.q;
-        optEl.innerHTML = ''; // 清空選項
+        optEl.innerHTML = '';
         
-        // 重置技能外觀
         qBox.classList.remove('bg-blue-50', 'bg-green-50');
         tagEl.classList.add('hidden');
         
@@ -570,7 +702,6 @@
             const btn = document.createElement('button');
             btn.className = `answer-btn py-5 text-3xl font-black rounded-2xl shadow-lg bg-white border-b-4 border-${color} text-${color} transition transform active:scale-95 hover:bg-gray-50`;
             btn.innerText = opt;
-            // 連點保護：防止同一題被重複觸發
             btn.onclick = (e) => {
                 if(btn.disabled) return;
                 Array.from(optEl.children).forEach(b => b.disabled = true);
@@ -594,12 +725,8 @@
 
             if (type === 'freeze') {
                 playSound('skill');
-                if (state.mode === 'vs') {
-                    const target = side === 'left' ? 'right' : 'left';
-                    applyPlayerFreeze(target);
-                } else {
-                    applyBossFreeze();
-                }
+                if (state.mode === 'vs') applyPlayerFreeze(side === 'left' ? 'right' : 'left');
+                else applyBossFreeze();
             }
             if (type === 'heal') {
                 playSound('skill');
@@ -631,7 +758,6 @@
 
         updateUI();
         checkGameOver();
-        // 如果遊戲沒結束，就立即更新題目
         if(!state.isGameOver) updateQuestion(side);
     }
 
@@ -678,7 +804,7 @@
         let targetX, targetY, targetEl;
         if (to === 'boss') {
             targetX = window.innerWidth / 2;
-            targetY = window.innerHeight * 0.3;
+            targetY = window.innerHeight * 0.35;
             targetEl = DOM.bossSprite;
         } else {
             const wrapper = DOM[`${to}CastleWrapper`];
@@ -708,13 +834,12 @@
         f.className = 'projectile';
         f.innerText = '☄️';
         f.style.left = '50%';
-        f.style.top = '30%';
+        f.style.top = '35%';
         document.body.appendChild(f);
 
         const target = DOM.leftCastleWrapper;
         const rect = target.getBoundingClientRect();
         
-        // 健壯性：防止遊戲結束或元件隱藏導致座標錯誤
         if(rect.width === 0) { f.remove(); return; }
 
         setTimeout(() => {
@@ -764,19 +889,22 @@
     function checkGameOver() {
         if (state.isGameOver) return;
 
+        // 如果在限時模式中提早將血量歸零，判定為 K.O.
         if (state.mode === 'coop') {
-            if (state.bossHp <= 0) endGame(true, '勝利！全班成功守護了城堡！');
+            if (state.bossHp <= 0) endGame(true, '勝利！全班成功守護了城堡！(提早擊殺)');
             else if (state.leftHp <= 0) endGame(false, '失敗！巨魔摧毀了城堡...');
         } else {
-            if (state.leftHp <= 0) endGame(true, `${state.rightName} 獲勝！`);
-            else if (state.rightHp <= 0) endGame(true, `${state.leftName} 獲勝！`);
+            if (state.leftHp <= 0) endGame(true, `${state.rightName} 獲勝！(K.O. 擊倒對手)`);
+            else if (state.rightHp <= 0) endGame(true, `${state.leftName} 獲勝！(K.O. 擊倒對手)`);
         }
     }
 
-    function endGame(isWin, msg) {
+    function endGame(isWin, msg, customTitle = null) {
         state.isGameOver = true;
+        if (timerInterval) clearInterval(timerInterval); // 停止計時器
+
         document.getElementById('overlay').classList.remove('hidden');
-        document.getElementById('result-title').innerText = isWin ? '🏆 戰鬥結束' : '❌ 挑戰結束';
+        document.getElementById('result-title').innerText = customTitle || (isWin ? '🏆 戰鬥結束' : '❌ 挑戰結束');
         document.getElementById('result-msg').innerText = msg;
 
         // 顯示統計資料
