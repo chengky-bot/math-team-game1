@@ -139,7 +139,7 @@
 
         .skill-badge {
             position: absolute;
-            top: -35px;
+            top: -30px;
             left: 50%;
             transform: translateX(-50%);
             padding: 4px 12px;
@@ -196,6 +196,7 @@
             background: rgba(255,255,255,0.5);
             border-radius: inherit;
             font-weight: bold;
+            z-index: 20;
         }
 
         #start-menu {
@@ -247,6 +248,14 @@
             100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
         }
 
+        /* 數字鍵盤閃爍輸入游標 */
+        .cursor-blink::after {
+            content: '|';
+            animation: blink 1s step-end infinite;
+            color: #4b5563;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
     </style>
 </head>
 <body>
@@ -257,78 +266,87 @@
 
 <!-- 開始菜單 -->
 <div id="start-menu" class="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-6 text-white text-center overflow-y-auto">
-    <div class="mb-2 text-5xl md:text-6xl animate-pulse">⚔️</div>
-    <h1 class="text-4xl md:text-6xl font-bold mb-2 drop-shadow-lg text-yellow-400">數學守護者</h1>
-    <p class="mb-4 text-sm md:text-lg text-blue-200">選擇模式、決定勝負條件，開始史詩級的數學對決！</p>
+    <div class="mb-2 text-4xl md:text-6xl animate-pulse mt-10 md:mt-0">⚔️</div>
+    <h1 class="text-3xl md:text-6xl font-bold mb-2 drop-shadow-lg text-yellow-400">數學守護者</h1>
+    <p class="mb-4 text-xs md:text-lg text-blue-200">選擇模式、決定勝負條件，開始史詩級的數學對決！</p>
     
     <!-- 勝負條件與時間設定 -->
-    <div class="flex flex-col items-center mb-4 w-full max-w-3xl">
-        <div class="bg-white/10 p-4 rounded-3xl backdrop-blur-xl border border-white/20 w-full shadow-lg">
-            <div class="flex justify-center items-center gap-4 mb-2">
-                <span class="text-lg md:text-xl font-bold mr-2 text-white drop-shadow-md">勝負模式:</span>
-                <button id="btn-rule-hp" onclick="selectRule('hp')" class="bg-purple-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-xl text-sm md:text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(147,51,234,0.5)]">🩸 預設血量</button>
-                <button id="btn-rule-time" onclick="selectRule('time')" class="bg-gray-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-xl text-sm md:text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">⏱️ 限時挑戰</button>
+    <div class="flex flex-col items-center mb-3 w-full max-w-3xl">
+        <div class="bg-white/10 p-3 md:p-4 rounded-2xl md:rounded-3xl backdrop-blur-xl border border-white/20 w-full shadow-lg">
+            <div class="flex justify-center items-center gap-2 md:gap-4 mb-2">
+                <span class="text-sm md:text-xl font-bold mr-1 md:mr-2 text-white drop-shadow-md">勝負模式:</span>
+                <button id="btn-rule-hp" onclick="selectRule('hp')" class="bg-purple-600 text-white px-3 py-1 md:px-6 md:py-2 rounded-xl text-xs md:text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(147,51,234,0.5)]">🩸 預設血量</button>
+                <button id="btn-rule-time" onclick="selectRule('time')" class="bg-gray-600 text-white px-3 py-1 md:px-6 md:py-2 rounded-xl text-xs md:text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">⏱️ 限時挑戰</button>
             </div>
             
-            <div id="time-setting-box" class="hidden flex justify-center items-center gap-4 transition-all duration-300 mt-3">
-                <span class="text-lg md:text-xl text-yellow-300 font-bold">遊戲時間:</span>
-                <input type="number" id="time-input" value="3" min="1" max="15" class="w-16 md:w-20 text-center text-black font-bold text-xl md:text-2xl rounded-lg outline-none border-4 border-yellow-400 bg-yellow-50 py-1">
-                <span class="text-lg md:text-xl text-white font-bold">分鐘</span>
+            <div id="time-setting-box" class="hidden flex justify-center items-center gap-2 md:gap-4 transition-all duration-300 mt-2">
+                <span class="text-sm md:text-xl text-yellow-300 font-bold">遊戲時間:</span>
+                <input type="number" id="time-input" value="3" min="1" max="15" class="w-12 md:w-20 text-center text-black font-bold text-base md:text-2xl rounded-lg outline-none border-4 border-yellow-400 bg-yellow-50 py-1">
+                <span class="text-sm md:text-xl text-white font-bold">分鐘</span>
             </div>
         </div>
     </div>
 
-    <!-- 細緻的題型選擇 (10以內/20以內/雙位數) -->
-    <div class="flex justify-center gap-4 mb-4 w-full max-w-3xl">
-        <div class="bg-white/10 p-4 rounded-3xl backdrop-blur-xl border border-white/20 w-full shadow-lg">
-            <span class="text-lg md:text-xl font-bold text-white drop-shadow-md block mb-3 text-center">選擇題型:</span>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <!-- 加法系列 -->
-                <button data-type="add10" onclick="selectMath('add10')" class="math-btn active bg-yellow-500 text-black px-2 py-2 rounded-xl text-sm md:text-base font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]">➕ 10以內加法</button>
-                <button data-type="add20" onclick="selectMath('add20')" class="math-btn bg-gray-600 text-white px-2 py-2 rounded-xl text-sm md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➕ 20以內加法</button>
-                <button data-type="add2d_nc" onclick="selectMath('add2d_nc')" class="math-btn bg-gray-600 text-white px-2 py-2 rounded-xl text-sm md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➕ 雙位數加法<br><span class="text-xs text-yellow-200">(不進位)</span></button>
+    <!-- 作答模式選擇 (選擇題 / 數字鍵盤) -->
+    <div class="flex justify-center gap-3 mb-3 w-full max-w-3xl">
+        <div class="bg-white/10 p-3 md:p-4 rounded-2xl md:rounded-3xl backdrop-blur-xl border border-white/20 w-full shadow-lg">
+            <div class="flex justify-center items-center gap-2 md:gap-4">
+                <span class="text-sm md:text-xl font-bold mr-1 md:mr-2 text-white drop-shadow-md block text-center">作答模式:</span>
+                <button id="btn-ans-mcq" onclick="selectAnswerMode('mcq')" class="bg-yellow-500 text-black px-3 py-1 md:px-6 md:py-2 rounded-xl text-xs md:text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]">🔠 選擇題</button>
+                <button id="btn-ans-numpad" onclick="selectAnswerMode('numpad')" class="bg-gray-600 text-white px-3 py-1 md:px-6 md:py-2 rounded-xl text-xs md:text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">🔢 數字鍵盤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 細緻的題型選擇 -->
+    <div class="flex justify-center gap-3 mb-3 w-full max-w-3xl">
+        <div class="bg-white/10 p-3 md:p-4 rounded-2xl md:rounded-3xl backdrop-blur-xl border border-white/20 w-full shadow-lg">
+            <span class="text-sm md:text-xl font-bold text-white drop-shadow-md block mb-2 text-center">選擇題型:</span>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+                <button data-type="add10" onclick="selectMath('add10')" class="math-btn active bg-yellow-500 text-black px-2 py-1 md:py-2 rounded-xl text-xs md:text-base font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]">➕ 10以內加法</button>
+                <button data-type="add20" onclick="selectMath('add20')" class="math-btn bg-gray-600 text-white px-2 py-1 md:py-2 rounded-xl text-xs md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➕ 20以內加法</button>
+                <button data-type="add2d_nc" onclick="selectMath('add2d_nc')" class="math-btn bg-gray-600 text-white px-2 py-1 md:py-2 rounded-xl text-xs md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➕ 雙位數加法<br><span class="text-[10px] md:text-xs text-yellow-200">(不進位)</span></button>
                 
-                <!-- 減法系列 -->
-                <button data-type="sub10" onclick="selectMath('sub10')" class="math-btn bg-gray-600 text-white px-2 py-2 rounded-xl text-sm md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➖ 10以內減法</button>
-                <button data-type="sub20" onclick="selectMath('sub20')" class="math-btn bg-gray-600 text-white px-2 py-2 rounded-xl text-sm md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➖ 20以內減法</button>
-                <button data-type="sub2d_nb" onclick="selectMath('sub2d_nb')" class="math-btn bg-gray-600 text-white px-2 py-2 rounded-xl text-sm md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➖ 雙位數減法<br><span class="text-xs text-blue-300">(不退位)</span></button>
+                <button data-type="sub10" onclick="selectMath('sub10')" class="math-btn bg-gray-600 text-white px-2 py-1 md:py-2 rounded-xl text-xs md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➖ 10以內減法</button>
+                <button data-type="sub20" onclick="selectMath('sub20')" class="math-btn bg-gray-600 text-white px-2 py-1 md:py-2 rounded-xl text-xs md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➖ 20以內減法</button>
+                <button data-type="sub2d_nb" onclick="selectMath('sub2d_nb')" class="math-btn bg-gray-600 text-white px-2 py-1 md:py-2 rounded-xl text-xs md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80">➖ 雙位數減法<br><span class="text-[10px] md:text-xs text-blue-300">(不退位)</span></button>
             </div>
         </div>
     </div>
 
     <!-- 隊伍設定 -->
-    <div class="flex flex-col md:flex-row gap-4 mb-6 w-full max-w-4xl">
-        <div class="bg-white/10 p-4 rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
-            <div class="flex items-center justify-center mb-3 text-lg md:text-xl">
-                <input id="left-name-input" type="text" placeholder="騎士" value="騎士" class="bg-transparent border-b-2 border-blue-400 outline-none w-1/2 text-center placeholder-white/50">
+    <div class="flex flex-col md:flex-row gap-3 mb-6 w-full max-w-4xl">
+        <div class="bg-white/10 p-3 md:p-4 rounded-2xl md:rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
+            <div class="flex items-center justify-center mb-2 text-base md:text-xl">
+                <input id="left-name-input" type="text" placeholder="騎士" value="騎士" class="bg-transparent border-b-2 border-blue-400 outline-none w-1/2 text-center placeholder-white/50 text-white">
                 <span class="ml-2 font-bold">隊</span>
             </div>
-            <div class="flex justify-center gap-3" id="left-color-selector">
-                <div class="color-dot active bg-blue-500 w-8 h-8 rounded-full cursor-pointer border-2 border-white" data-color="blue-500"></div>
-                <div class="color-dot bg-indigo-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="indigo-500"></div>
-                <div class="color-dot bg-cyan-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="cyan-500"></div>
+            <div class="flex justify-center gap-2 md:gap-3" id="left-color-selector">
+                <div class="color-dot active bg-blue-500 w-6 h-6 md:w-8 md:h-8 rounded-full cursor-pointer border-2 border-white" data-color="blue-500"></div>
+                <div class="color-dot bg-indigo-500 w-6 h-6 md:w-8 md:h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="indigo-500"></div>
+                <div class="color-dot bg-cyan-500 w-6 h-6 md:w-8 md:h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="cyan-500"></div>
             </div>
         </div>
 
-        <div class="bg-white/10 p-4 rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
-            <div class="flex items-center justify-center mb-3 text-lg md:text-xl">
-                <input id="right-name-input" type="text" placeholder="法師" value="法師" class="bg-transparent border-b-2 border-red-400 outline-none w-1/2 text-center placeholder-white/50">
+        <div class="bg-white/10 p-3 md:p-4 rounded-2xl md:rounded-3xl backdrop-blur-xl border border-white/20 flex-1">
+            <div class="flex items-center justify-center mb-2 text-base md:text-xl">
+                <input id="right-name-input" type="text" placeholder="法師" value="法師" class="bg-transparent border-b-2 border-red-400 outline-none w-1/2 text-center placeholder-white/50 text-white">
                 <span class="ml-2 font-bold">隊</span>
             </div>
-            <div class="flex justify-center gap-3" id="right-color-selector">
-                <div class="color-dot bg-orange-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="orange-500"></div>
-                <div class="color-dot active bg-red-500 w-8 h-8 rounded-full cursor-pointer border-2 border-white" data-color="red-500"></div>
-                <div class="color-dot bg-pink-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="pink-500"></div>
+            <div class="flex justify-center gap-2 md:gap-3" id="right-color-selector">
+                <div class="color-dot bg-orange-500 w-6 h-6 md:w-8 md:h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="orange-500"></div>
+                <div class="color-dot active bg-red-500 w-6 h-6 md:w-8 md:h-8 rounded-full cursor-pointer border-2 border-white" data-color="red-500"></div>
+                <div class="color-dot bg-pink-500 w-6 h-6 md:w-8 md:h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="pink-500"></div>
             </div>
         </div>
     </div>
 
     <!-- 啟動按鈕 -->
-    <div class="flex gap-6 pb-6">
-        <button onclick="startGame('coop')" class="bg-green-500 hover:bg-green-400 px-6 py-3 md:px-10 md:py-4 rounded-2xl text-xl md:text-2xl font-bold shadow-xl transition transform hover:scale-105">
+    <div class="flex gap-4 md:gap-6 pb-6">
+        <button onclick="startGame('coop')" class="bg-green-500 hover:bg-green-400 px-5 py-3 md:px-10 md:py-4 rounded-2xl text-lg md:text-2xl font-bold shadow-xl transition transform hover:scale-105">
             🤝 合作擊王
         </button>
-        <button onclick="startGame('vs')" class="bg-red-600 hover:bg-red-500 px-6 py-3 md:px-10 md:py-4 rounded-2xl text-xl md:text-2xl font-bold shadow-xl transition transform hover:scale-105">
+        <button onclick="startGame('vs')" class="bg-red-600 hover:bg-red-500 px-5 py-3 md:px-10 md:py-4 rounded-2xl text-lg md:text-2xl font-bold shadow-xl transition transform hover:scale-105">
             ⚔️ 巔峰對戰
         </button>
     </div>
@@ -339,38 +357,38 @@
     <div id="screen-alert">⚠️ 巨魔進入狂暴狀態！</div>
 
     <!-- 頂部 UI -->
-    <div class="absolute top-0 w-full p-4 flex justify-between items-start z-30 pointer-events-none">
+    <div class="absolute top-0 w-full p-2 md:p-4 flex justify-between items-start z-30 pointer-events-none">
         
         <!-- 左方血量與能量 -->
-        <div id="left-stats-box" class="p-3 rounded-2xl text-white shadow-xl w-40 md:w-64 backdrop-blur-md border border-white/20 transition-colors duration-300 pointer-events-auto mt-14">
-            <div id="left-display-name" class="text-lg md:text-xl font-bold"></div>
-            <div id="left-energy-text" class="text-yellow-300 text-xs md:text-sm font-bold">⚡ 能量: 0%</div>
-            <div class="h-3 bg-black/40 rounded-full mt-2 overflow-hidden border border-white/30">
+        <div id="left-stats-box" class="p-2 md:p-3 rounded-2xl text-white shadow-xl w-32 md:w-64 backdrop-blur-md border border-white/20 transition-colors duration-300 pointer-events-auto mt-12 md:mt-14">
+            <div id="left-display-name" class="text-sm md:text-xl font-bold"></div>
+            <div id="left-energy-text" class="text-yellow-300 text-[10px] md:text-sm font-bold">⚡ 能量: 0%</div>
+            <div class="h-2 md:h-3 bg-black/40 rounded-full mt-1 md:mt-2 overflow-hidden border border-white/30">
                 <div id="left-progress" class="h-full bg-gradient-to-r from-yellow-300 to-yellow-500 transition-all duration-300 w-0"></div>
             </div>
         </div>
 
         <!-- 中央 UI -->
-        <div id="center-ui" class="flex-1 flex flex-col items-center mx-4 relative pointer-events-auto">
-            <div id="game-timer" class="text-3xl md:text-5xl font-black text-yellow-400 bg-black/80 px-6 py-1 md:px-8 md:py-2 rounded-full border-4 border-yellow-500 shadow-[0_0_20px_rgba(250,204,21,0.6)] mb-2 hidden tracking-wider z-50 transition-colors duration-300">
+        <div id="center-ui" class="flex-1 flex flex-col items-center mx-2 md:mx-4 relative pointer-events-auto">
+            <div id="game-timer" class="text-2xl md:text-5xl font-black text-yellow-400 bg-black/80 px-4 py-1 md:px-8 md:py-2 rounded-full border-2 md:border-4 border-yellow-500 shadow-[0_0_20px_rgba(250,204,21,0.6)] mb-1 md:mb-2 hidden tracking-wider z-50 transition-colors duration-300">
                 03:00
             </div>
             
-            <div id="boss-ui" class="w-full max-w-md text-center mt-2">
-                <div id="boss-label" class="text-red-300 font-bold mb-1 drop-shadow-md text-sm md:text-base">森林巨魔 HP</div>
-                <div class="h-6 md:h-8 bg-black/50 rounded-full border-2 border-white/30 overflow-hidden relative shadow-inner">
+            <div id="boss-ui" class="w-full max-w-md text-center mt-1 md:mt-2">
+                <div id="boss-label" class="text-red-300 font-bold mb-1 drop-shadow-md text-xs md:text-base">森林巨魔 HP</div>
+                <div class="h-4 md:h-8 bg-black/50 rounded-full border-2 border-white/30 overflow-hidden relative shadow-inner">
                     <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300 w-full"></div>
-                    <div id="boss-hp-text" class="absolute inset-0 flex items-center justify-center text-white text-xs md:text-sm font-bold drop-shadow-md">1500 / 1500</div>
+                    <div id="boss-hp-text" class="absolute inset-0 flex items-center justify-center text-white text-[10px] md:text-sm font-bold drop-shadow-md">1500 / 1500</div>
                 </div>
-                <div id="freeze-timer" class="text-cyan-400 font-bold mt-1 text-xs md:text-sm hidden">❄️ 已冰凍 7.0s</div>
+                <div id="freeze-timer" class="text-cyan-400 font-bold mt-1 text-[10px] md:text-sm hidden">❄️ 已冰凍 7.0s</div>
             </div>
         </div>
 
         <!-- 右方血量與能量 -->
-        <div id="right-stats-box" class="p-3 rounded-2xl text-white shadow-xl w-40 md:w-64 text-right backdrop-blur-md border border-white/20 transition-colors duration-300 pointer-events-auto mt-14">
-            <div id="right-display-name" class="text-lg md:text-xl font-bold"></div>
-            <div id="right-energy-text" class="text-yellow-300 text-xs md:text-sm font-bold">⚡ 能量: 0%</div>
-            <div class="h-3 bg-black/40 rounded-full mt-2 overflow-hidden border border-white/30">
+        <div id="right-stats-box" class="p-2 md:p-3 rounded-2xl text-white shadow-xl w-32 md:w-64 text-right backdrop-blur-md border border-white/20 transition-colors duration-300 pointer-events-auto mt-12 md:mt-14">
+            <div id="right-display-name" class="text-sm md:text-xl font-bold"></div>
+            <div id="right-energy-text" class="text-yellow-300 text-[10px] md:text-sm font-bold">⚡ 能量: 0%</div>
+            <div class="h-2 md:h-3 bg-black/40 rounded-full mt-1 md:mt-2 overflow-hidden border border-white/30">
                 <div id="right-progress" class="h-full bg-gradient-to-r from-yellow-300 to-yellow-500 transition-all duration-300 w-0 float-right"></div>
             </div>
         </div>
@@ -385,45 +403,53 @@
 
     <!-- 左城堡 -->
     <div id="left-castle-wrapper" class="castle-wrapper" style="left: 10%;">
-        <div class="h-4 w-24 md:w-32 bg-gray-900 rounded-full mb-2 border border-white/30 overflow-hidden">
+        <div class="h-3 md:h-4 w-20 md:w-32 bg-gray-900 rounded-full mb-1 border border-white/30 overflow-hidden">
             <div id="left-castle-hp-bar" class="h-full bg-green-500 w-full transition-all duration-300"></div>
         </div>
-        <div class="castle-emoji">🏰</div>
-        <div class="castle-label text-sm md:text-base" id="left-castle-label">左方防禦</div>
+        <div class="castle-emoji text-[70px] md:text-[110px]">🏰</div>
+        <div class="castle-label text-xs md:text-base" id="left-castle-label">左方防禦</div>
     </div>
 
     <!-- 右城堡 -->
     <div id="right-castle-wrapper" class="castle-wrapper" style="right: 10%;">
-        <div class="h-4 w-24 md:w-32 bg-gray-900 rounded-full mb-2 border border-white/30 overflow-hidden">
+        <div class="h-3 md:h-4 w-20 md:w-32 bg-gray-900 rounded-full mb-1 border border-white/30 overflow-hidden">
             <div id="right-castle-hp-bar" class="h-full bg-green-500 w-full transition-all duration-300"></div>
         </div>
-        <div class="castle-emoji" style="transform: scaleX(-1);">🏰</div>
-        <div class="castle-label text-sm md:text-base" id="right-castle-label">右方防禦</div>
+        <div class="castle-emoji text-[70px] md:text-[110px]" style="transform: scaleX(-1);">🏰</div>
+        <div class="castle-label text-xs md:text-base" id="right-castle-label">右方防禦</div>
     </div>
 
     <!-- 底部互動區 -->
-    <div class="absolute bottom-0 w-full flex z-40 px-2 md:px-6 pb-4 md:pb-6 gap-2 md:gap-6 pt-16 pointer-events-none">
+    <div class="absolute bottom-0 w-full flex z-40 px-2 md:px-6 pb-2 md:pb-6 gap-2 md:gap-6 pt-16 pointer-events-none">
         
         <!-- 左側互動 -->
         <div class="flex-1 flex flex-col items-center justify-end pointer-events-auto relative">
-            <button id="left-ult-btn" onclick="castUltimate('left')" class="ult-btn hidden bg-gradient-to-b from-yellow-300 to-yellow-600 text-red-900 border-4 border-white px-6 py-2 rounded-full font-black text-xl md:text-2xl shadow-[0_0_20px_rgba(234,179,8,1)] hover:scale-110 transition-transform whitespace-nowrap">
+            <button id="left-ult-btn" onclick="castUltimate('left')" class="ult-btn hidden bg-gradient-to-b from-yellow-300 to-yellow-600 text-red-900 border-2 md:border-4 border-white px-4 md:px-6 py-1 md:py-2 rounded-full font-black text-sm md:text-2xl shadow-[0_0_20px_rgba(234,179,8,1)] hover:scale-110 transition-transform whitespace-nowrap">
                 ☄️ 隕石大絕
             </button>
-            <div id="left-question-box" class="bg-white/95 p-4 md:p-6 rounded-2xl md:rounded-[2rem] shadow-2xl w-full max-w-sm border-b-8 relative transition-all duration-300">
+            <div id="left-question-box" class="bg-white/95 p-3 md:p-6 rounded-2xl md:rounded-[2rem] shadow-2xl w-full max-w-sm border-b-8 relative transition-all duration-300">
                 <div id="left-skill-tag" class="skill-badge hidden"></div>
-                <div id="left-question" class="text-4xl md:text-6xl font-black text-gray-800 mb-4 md:mb-8 text-center">? + ?</div>
+                <div id="left-question" class="text-3xl md:text-6xl font-black text-gray-800 mb-2 md:mb-4 text-center">? + ?</div>
+                
+                <!-- 數字鍵盤輸入顯示區 -->
+                <div id="left-input-display" class="hidden text-2xl md:text-4xl font-bold text-gray-800 mb-2 text-center h-8 md:h-12 border-b-4 border-gray-300 w-2/3 mx-auto flex items-center justify-center tracking-widest bg-gray-100 rounded-t-lg cursor-blink"></div>
+                
                 <div class="grid grid-cols-2 gap-2 md:gap-4" id="left-options"></div>
             </div>
         </div>
 
         <!-- 右側互動 -->
         <div class="flex-1 flex flex-col items-center justify-end pointer-events-auto relative">
-            <button id="right-ult-btn" onclick="castUltimate('right')" class="ult-btn hidden bg-gradient-to-b from-yellow-300 to-yellow-600 text-red-900 border-4 border-white px-6 py-2 rounded-full font-black text-xl md:text-2xl shadow-[0_0_20px_rgba(234,179,8,1)] hover:scale-110 transition-transform whitespace-nowrap">
+            <button id="right-ult-btn" onclick="castUltimate('right')" class="ult-btn hidden bg-gradient-to-b from-yellow-300 to-yellow-600 text-red-900 border-2 md:border-4 border-white px-4 md:px-6 py-1 md:py-2 rounded-full font-black text-sm md:text-2xl shadow-[0_0_20px_rgba(234,179,8,1)] hover:scale-110 transition-transform whitespace-nowrap">
                 ☄️ 隕石大絕
             </button>
-            <div id="right-question-box" class="bg-white/95 p-4 md:p-6 rounded-2xl md:rounded-[2rem] shadow-2xl w-full max-w-sm border-b-8 relative transition-all duration-300">
+            <div id="right-question-box" class="bg-white/95 p-3 md:p-6 rounded-2xl md:rounded-[2rem] shadow-2xl w-full max-w-sm border-b-8 relative transition-all duration-300">
                 <div id="right-skill-tag" class="skill-badge hidden"></div>
-                <div id="right-question" class="text-4xl md:text-6xl font-black text-gray-800 mb-4 md:mb-8 text-center">? + ?</div>
+                <div id="right-question" class="text-3xl md:text-6xl font-black text-gray-800 mb-2 md:mb-4 text-center">? + ?</div>
+                
+                <!-- 數字鍵盤輸入顯示區 -->
+                <div id="right-input-display" class="hidden text-2xl md:text-4xl font-bold text-gray-800 mb-2 text-center h-8 md:h-12 border-b-4 border-gray-300 w-2/3 mx-auto flex items-center justify-center tracking-widest bg-gray-100 rounded-t-lg cursor-blink"></div>
+                
                 <div class="grid grid-cols-2 gap-2 md:gap-4" id="right-options"></div>
             </div>
         </div>
@@ -434,17 +460,17 @@
 
     <!-- 教師密碼驗證視窗 -->
     <div id="password-modal" class="hidden absolute inset-0 bg-black/80 z-[200] flex items-center justify-center backdrop-blur-md">
-        <div class="bg-white p-8 rounded-[2rem] text-center shadow-[0_0_40px_rgba(0,0,0,0.5)] w-full max-w-sm transform transition-all">
-            <div class="text-6xl mb-4">🔐</div>
-            <h2 class="text-3xl font-bold mb-2 text-gray-800">教師權限</h2>
-            <p class="text-gray-500 mb-6 font-sans">請輸入教師密碼以暫停或結束遊戲</p>
+        <div class="bg-white p-6 md:p-8 rounded-[2rem] text-center shadow-[0_0_40px_rgba(0,0,0,0.5)] w-11/12 max-w-sm transform transition-all">
+            <div class="text-5xl md:text-6xl mb-4">🔐</div>
+            <h2 class="text-2xl md:text-3xl font-bold mb-2 text-gray-800">教師權限</h2>
+            <p class="text-sm md:text-base text-gray-500 mb-6 font-sans">請輸入教師密碼以暫停或結束遊戲</p>
             
-            <input type="password" id="teacher-password" class="w-full border-4 border-gray-200 rounded-xl px-4 py-3 text-2xl text-center mb-2 focus:border-red-500 focus:outline-none transition-colors tracking-[0.5em] font-sans" placeholder="****">
-            <p id="password-error" class="text-red-500 font-bold mb-6 h-6 opacity-0 transition-opacity">❌ 密碼錯誤，請重試</p>
+            <input type="password" id="teacher-password" class="w-full border-4 border-gray-200 rounded-xl px-4 py-2 md:py-3 text-xl md:text-2xl text-center mb-2 focus:border-red-500 focus:outline-none transition-colors tracking-[0.5em] font-sans" placeholder="****">
+            <p id="password-error" class="text-red-500 font-bold mb-4 md:mb-6 h-6 opacity-0 transition-opacity text-sm md:text-base">❌ 密碼錯誤，請重試</p>
             
             <div class="flex gap-4">
-                <button onclick="closeStopModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-bold text-xl transition">繼續遊戲</button>
-                <button onclick="verifyPassword()" class="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold text-xl transition shadow-lg">確認結束</button>
+                <button onclick="closeStopModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 md:py-3 rounded-xl font-bold text-lg md:text-xl transition">繼續遊戲</button>
+                <button onclick="verifyPassword()" class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 md:py-3 rounded-xl font-bold text-lg md:text-xl transition shadow-lg">確認結束</button>
             </div>
         </div>
     </div>
@@ -452,48 +478,48 @@
     <!-- 結算畫面 -->
     <div id="overlay" class="absolute inset-0 bg-black/90 z-[150] flex items-center justify-center hidden backdrop-blur-sm">
         <div class="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] text-center max-w-5xl w-11/12 shadow-[0_0_50px_rgba(255,255,255,0.2)] max-h-[95vh] overflow-y-auto">
-            <h2 id="result-title" class="text-4xl md:text-6xl font-bold mb-4"></h2>
-            <p id="result-msg" class="text-lg md:text-2xl text-gray-600 mb-6 md:mb-8"></p>
+            <h2 id="result-title" class="text-3xl md:text-6xl font-bold mb-3 md:mb-4"></h2>
+            <p id="result-msg" class="text-base md:text-2xl text-gray-600 mb-4 md:mb-8"></p>
 
             <!-- 戰績統計區塊 -->
-            <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8 hidden">
-                <div class="bg-blue-50 p-4 md:p-6 rounded-2xl border-2 border-blue-200 shadow-inner flex flex-col">
-                    <h3 id="result-left-name" class="text-xl md:text-2xl font-bold text-blue-800 mb-3 md:mb-4 border-b-2 border-blue-200 pb-2">騎士隊</h3>
-                    <div class="flex justify-around text-base md:text-lg mb-4">
-                        <div class="text-green-600 font-bold">✅ 答對: <span id="left-correct-count" class="text-xl md:text-2xl">0</span></div>
-                        <div class="text-red-600 font-bold">❌ 答錯: <span id="left-wrong-count" class="text-xl md:text-2xl">0</span></div>
+            <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-8 hidden">
+                <div class="bg-blue-50 p-3 md:p-6 rounded-2xl border-2 border-blue-200 shadow-inner flex flex-col">
+                    <h3 id="result-left-name" class="text-lg md:text-2xl font-bold text-blue-800 mb-2 md:mb-4 border-b-2 border-blue-200 pb-2">騎士隊</h3>
+                    <div class="flex justify-around text-sm md:text-lg mb-3 md:mb-4">
+                        <div class="text-green-600 font-bold">✅ 答對: <span id="left-correct-count" class="text-lg md:text-2xl">0</span></div>
+                        <div class="text-red-600 font-bold">❌ 答錯: <span id="left-wrong-count" class="text-lg md:text-2xl">0</span></div>
                     </div>
-                    <div class="text-orange-600 font-bold text-lg md:text-xl mb-4">💥 總輸出: <span id="left-damage-count">0</span></div>
+                    <div class="text-orange-600 font-bold text-base md:text-xl mb-3 md:mb-4">💥 總輸出: <span id="left-damage-count">0</span></div>
                     
                     <!-- 左方錯題本 -->
-                    <div id="left-error-log" class="mt-auto text-left max-h-32 md:max-h-40 overflow-y-auto bg-white/70 rounded-xl p-3 text-xs md:text-sm hidden border border-blue-100">
-                        <div class="font-bold text-gray-700 mb-2 border-b border-gray-300 pb-1">📝 錯題回顧：</div>
+                    <div id="left-error-log" class="mt-auto text-left max-h-24 md:max-h-40 overflow-y-auto bg-white/70 rounded-xl p-2 md:p-3 text-[10px] md:text-sm hidden border border-blue-100">
+                        <div class="font-bold text-gray-700 mb-1 md:mb-2 border-b border-gray-300 pb-1">📝 錯題回顧：</div>
                         <ul id="left-error-list" class="space-y-1 text-gray-800 font-medium"></ul>
                     </div>
                 </div>
 
-                <div class="bg-red-50 p-4 md:p-6 rounded-2xl border-2 border-red-200 shadow-inner flex flex-col">
-                    <h3 id="result-right-name" class="text-xl md:text-2xl font-bold text-red-800 mb-3 md:mb-4 border-b-2 border-red-200 pb-2">法師隊</h3>
-                    <div class="flex justify-around text-base md:text-lg mb-4">
-                        <div class="text-green-600 font-bold">✅ 答對: <span id="right-correct-count" class="text-xl md:text-2xl">0</span></div>
-                        <div class="text-red-600 font-bold">❌ 答錯: <span id="right-wrong-count" class="text-xl md:text-2xl">0</span></div>
+                <div class="bg-red-50 p-3 md:p-6 rounded-2xl border-2 border-red-200 shadow-inner flex flex-col">
+                    <h3 id="result-right-name" class="text-lg md:text-2xl font-bold text-red-800 mb-2 md:mb-4 border-b-2 border-red-200 pb-2">法師隊</h3>
+                    <div class="flex justify-around text-sm md:text-lg mb-3 md:mb-4">
+                        <div class="text-green-600 font-bold">✅ 答對: <span id="right-correct-count" class="text-lg md:text-2xl">0</span></div>
+                        <div class="text-red-600 font-bold">❌ 答錯: <span id="right-wrong-count" class="text-lg md:text-2xl">0</span></div>
                     </div>
-                    <div class="text-orange-600 font-bold text-lg md:text-xl mb-4">💥 總輸出: <span id="right-damage-count">0</span></div>
+                    <div class="text-orange-600 font-bold text-base md:text-xl mb-3 md:mb-4">💥 總輸出: <span id="right-damage-count">0</span></div>
                     
                     <!-- 右方錯題本 -->
-                    <div id="right-error-log" class="mt-auto text-left max-h-32 md:max-h-40 overflow-y-auto bg-white/70 rounded-xl p-3 text-xs md:text-sm hidden border border-red-100">
-                        <div class="font-bold text-gray-700 mb-2 border-b border-gray-300 pb-1">📝 錯題回顧：</div>
+                    <div id="right-error-log" class="mt-auto text-left max-h-24 md:max-h-40 overflow-y-auto bg-white/70 rounded-xl p-2 md:p-3 text-[10px] md:text-sm hidden border border-red-100">
+                        <div class="font-bold text-gray-700 mb-1 md:mb-2 border-b border-gray-300 pb-1">📝 錯題回顧：</div>
                         <ul id="right-error-list" class="space-y-1 text-gray-800 font-medium"></ul>
                     </div>
                 </div>
             </div>
 
-            <div id="encouragement-msg" class="text-lg md:text-2xl font-bold text-indigo-600 mb-6 md:mb-8 bg-indigo-50 p-4 rounded-xl hidden">
+            <div id="encouragement-msg" class="text-base md:text-2xl font-bold text-indigo-600 mb-4 md:mb-8 bg-indigo-50 p-3 md:p-4 rounded-xl hidden">
                 你們都表現得非常棒！繼續保持對數學的熱情吧！🌟
             </div>
 
             <div class="flex gap-4 justify-center">
-                <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 md:px-10 py-3 md:py-4 rounded-2xl font-bold text-xl md:text-2xl transition shadow-lg">返回主頁設定</button>
+                <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 md:px-10 py-2 md:py-4 rounded-2xl font-bold text-lg md:text-2xl transition shadow-lg">返回主頁設定</button>
             </div>
         </div>
     </div>
@@ -548,6 +574,12 @@
                 gain.gain.setValueAtTime(0.4, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 1.5);
                 osc.start(now); osc.stop(now + 1.5);
+            } else if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
             }
         } catch(e) {
             console.warn("Audio play blocked", e);
@@ -565,8 +597,9 @@
     // --- 遊戲邏輯與狀態 ---
     const state = {
         mode: 'coop',
-        mathType: 'add10', // 預設：10以內加法
+        mathType: 'add10', 
         gameRule: 'hp', 
+        answerMode: 'mcq', // 'mcq' (選擇題) 或 'numpad' (數字鍵盤)
         timeLimit: 0,   
         maxBossHp: 1500, 
         bossHp: 1500,
@@ -585,6 +618,8 @@
         rightName: '',
         leftColor: 'blue-500',
         rightColor: 'red-500',
+        leftInput: '',  // 數字鍵盤當前輸入
+        rightInput: '', // 數字鍵盤當前輸入
         soundEnabled: true,
         stats: {
             left: { correct: 0, wrong: 0, damage: 0, errors: [] },
@@ -611,6 +646,7 @@
             DOM[`${side}Options`] = document.getElementById(`${side}-options`);
             DOM[`${side}SkillTag`] = document.getElementById(`${side}-skill-tag`);
             DOM[`${side}UltBtn`] = document.getElementById(`${side}-ult-btn`);
+            DOM[`${side}InputDisplay`] = document.getElementById(`${side}-input-display`);
         });
         DOM.bossUi = document.getElementById('boss-ui');
         DOM.bossHpBar = document.getElementById('boss-hp-bar');
@@ -634,30 +670,34 @@
         });
     });
 
-    // --- 題型選擇邏輯更新 ---
+    // --- 設定切換邏輯 ---
+    function selectAnswerMode(mode) {
+        state.answerMode = mode;
+        const btnMcq = document.getElementById('btn-ans-mcq');
+        const btnNumpad = document.getElementById('btn-ans-numpad');
+        const activeClass = 'bg-yellow-500 text-black px-3 py-1 md:px-6 md:py-2 rounded-xl text-xs md:text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]';
+        const inactiveClass = 'bg-gray-600 text-white px-3 py-1 md:px-6 md:py-2 rounded-xl text-xs md:text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
+
+        if (mode === 'mcq') {
+            btnMcq.className = activeClass; btnNumpad.className = inactiveClass;
+        } else {
+            btnMcq.className = inactiveClass; btnNumpad.className = activeClass;
+        }
+    }
+
     function selectMath(type) {
         state.mathType = type;
-        const activeClass = 'math-btn bg-yellow-500 text-black px-2 py-2 rounded-xl text-sm md:text-base font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]';
-        const inactiveClass = 'math-btn bg-gray-600 text-white px-2 py-2 rounded-xl text-sm md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
+        const activeClass = 'math-btn active bg-yellow-500 text-black px-2 py-1 md:py-2 rounded-xl text-xs md:text-base font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(234,179,8,0.5)]';
+        const inactiveClass = 'math-btn bg-gray-600 text-white px-2 py-1 md:py-2 rounded-xl text-xs md:text-base font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
         
         document.querySelectorAll('.math-btn').forEach(btn => {
             if (btn.dataset.type === type) {
-                // 如果被選中，套用高亮，並動態加上「選中時的黃色背景色」
                 btn.className = activeClass;
-                // 如果是加法系列，把備註文字改成深色
-                if (btn.querySelector('span')) {
-                    btn.querySelector('span').className = 'text-xs text-yellow-900';
-                }
+                if (btn.querySelector('span')) btn.querySelector('span').className = 'text-[10px] md:text-xs text-yellow-900';
             } else {
-                // 未選中狀態
                 btn.className = inactiveClass;
-                // 還原備註文字顏色
-                if (btn.querySelector('span') && btn.dataset.type === 'add2d_nc') {
-                    btn.querySelector('span').className = 'text-xs text-yellow-200';
-                }
-                if (btn.querySelector('span') && btn.dataset.type === 'sub2d_nb') {
-                    btn.querySelector('span').className = 'text-xs text-blue-300';
-                }
+                if (btn.querySelector('span') && btn.dataset.type === 'add2d_nc') btn.querySelector('span').className = 'text-[10px] md:text-xs text-yellow-200';
+                if (btn.querySelector('span') && btn.dataset.type === 'sub2d_nb') btn.querySelector('span').className = 'text-[10px] md:text-xs text-blue-300';
             }
         });
     }
@@ -667,8 +707,8 @@
         const btnHp = document.getElementById('btn-rule-hp');
         const btnTime = document.getElementById('btn-rule-time');
         const timeBox = document.getElementById('time-setting-box');
-        const activeClass = 'bg-purple-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-xl text-sm md:text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(147,51,234,0.5)]';
-        const inactiveClass = 'bg-gray-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-xl text-sm md:text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
+        const activeClass = 'bg-purple-600 text-white px-3 py-1 md:px-6 md:py-2 rounded-xl text-xs md:text-xl font-bold transition transform scale-105 border-4 border-white shadow-[0_0_15px_rgba(147,51,234,0.5)]';
+        const inactiveClass = 'bg-gray-600 text-white px-3 py-1 md:px-6 md:py-2 rounded-xl text-xs md:text-xl font-bold transition border-4 border-transparent hover:bg-gray-500 opacity-80';
 
         if (rule === 'hp') {
             btnHp.className = activeClass; btnTime.className = inactiveClass;
@@ -769,10 +809,6 @@
         }
     }
 
-    document.getElementById('teacher-password')?.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') verifyPassword();
-    });
-
     // --- 計時器 ---
     function startTimer() {
         updateTimerDisplay();
@@ -803,9 +839,7 @@
         
         bossAttackInterval = setInterval(() => {
             if (state.isGameOver || state.bossFrozen || state.isPaused) return; 
-            
             monsterAttack();
-
             if (state.isEnraged && Math.random() < 0.6) {
                 const targetSide = Math.random() < 0.5 ? 'left' : 'right';
                 spawnDarkCloud(targetSide);
@@ -825,9 +859,7 @@
             setTimeout(() => DOM.screenAlert.classList.remove('alert-show'), 2000);
             
             startBossPassiveAttack();
-            
-            spawnDarkCloud('left');
-            spawnDarkCloud('right');
+            spawnDarkCloud('left'); spawnDarkCloud('right');
         }
     }
 
@@ -850,119 +882,85 @@
         qBox.appendChild(cloud);
     }
 
-    // --- 精準作答系統 (六種題型) ---
+    // --- 題目生成系統 ---
     function generateQuestion() {
         let a, b, ans;
         let symbol = '+';
-        let minAns = 0;
-        let maxAns = 10;
+        let minAns = 0; let maxAns = 10;
 
         switch(state.mathType) {
             case 'add10':
                 symbol = '+';
-                a = Math.floor(Math.random() * 9) + 1; // 1~9
-                b = Math.floor(Math.random() * (10 - a)) + 1; // 1 ~ (10-a)
-                ans = a + b;
-                minAns = 2; maxAns = 10;
+                a = Math.floor(Math.random() * 9) + 1;
+                b = Math.floor(Math.random() * (10 - a)) + 1;
+                ans = a + b; minAns = 2; maxAns = 10;
                 break;
-            
             case 'add20':
                 symbol = '+';
-                a = Math.floor(Math.random() * 19) + 1; // 1~19
-                b = Math.floor(Math.random() * (20 - a)) + 1; // 1 ~ (20-a)
-                ans = a + b;
-                minAns = 2; maxAns = 20;
+                a = Math.floor(Math.random() * 19) + 1;
+                b = Math.floor(Math.random() * (20 - a)) + 1;
+                ans = a + b; minAns = 2; maxAns = 20;
                 break;
-
-            case 'add2d_nc': // 雙位數加法(不進位)
+            case 'add2d_nc':
                 symbol = '+';
-                let a1 = Math.floor(Math.random() * 8) + 1; // 十位數 1~8
-                let b1 = Math.floor(Math.random() * (9 - a1)) + 1; // 確保十位數相加 <= 9
-                let a0 = Math.floor(Math.random() * 10); // 個位數 0~9
-                let b0 = Math.floor(Math.random() * (10 - a0)); // 確保個位數相加 <= 9
-                a = a1 * 10 + a0;
-                b = b1 * 10 + b0;
-                ans = a + b;
-                minAns = 20; maxAns = 99;
+                let a1 = Math.floor(Math.random() * 8) + 1;
+                let b1 = Math.floor(Math.random() * (9 - a1)) + 1;
+                let a0 = Math.floor(Math.random() * 10);
+                let b0 = Math.floor(Math.random() * (10 - a0));
+                a = a1 * 10 + a0; b = b1 * 10 + b0;
+                ans = a + b; minAns = 20; maxAns = 99;
                 break;
-
             case 'sub10':
                 symbol = '-';
-                a = Math.floor(Math.random() * 10) + 1; // 1~10
-                b = Math.floor(Math.random() * a) + 1; // 1~a
-                ans = a - b;
-                minAns = 0; maxAns = 9;
+                a = Math.floor(Math.random() * 10) + 1;
+                b = Math.floor(Math.random() * a) + 1;
+                ans = a - b; minAns = 0; maxAns = 9;
                 break;
-
             case 'sub20':
                 symbol = '-';
-                a = Math.floor(Math.random() * 10) + 11; // 為了確保有挑戰性，減數設定在 11~20
-                b = Math.floor(Math.random() * (a - 1)) + 1; // 1 ~ (a-1)
-                ans = a - b;
-                minAns = 1; maxAns = 19;
+                a = Math.floor(Math.random() * 10) + 11;
+                b = Math.floor(Math.random() * (a - 1)) + 1;
+                ans = a - b; minAns = 1; maxAns = 19;
                 break;
-
-            case 'sub2d_nb': // 雙位數減法(不退位)
+            case 'sub2d_nb':
                 symbol = '-';
-                let sa1 = Math.floor(Math.random() * 9) + 1; // 十位數 1~9
-                let sb1 = Math.floor(Math.random() * sa1) + 1; // sb1 <= sa1
-                let sa0 = Math.floor(Math.random() * 10); // 個位數 0~9
-                let sb0 = Math.floor(Math.random() * (sa0 + 1)); // sb0 <= sa0 (確保不退位)
-                
-                // 避免出現 A - A = 0 這種完全一樣的無聊題目
-                if (sa1 === sb1 && sa0 === sb0) {
-                    if (sa0 < 9) sa0++; else sb0--;
-                }
-                
-                a = sa1 * 10 + sa0;
-                b = sb1 * 10 + sb0;
-                ans = a - b;
-                minAns = 1; maxAns = 99;
+                let sa1 = Math.floor(Math.random() * 9) + 1;
+                let sb1 = Math.floor(Math.random() * sa1) + 1;
+                let sa0 = Math.floor(Math.random() * 10);
+                let sb0 = Math.floor(Math.random() * (sa0 + 1));
+                if (sa1 === sb1 && sa0 === sb0) { if (sa0 < 9) sa0++; else sb0--; }
+                a = sa1 * 10 + sa0; b = sb1 * 10 + sb0;
+                ans = a - b; minAns = 1; maxAns = 99;
                 break;
         }
 
         let opts = new Set([ans]);
         let attempts = 0;
         
-        // 產生混淆選項
         while (opts.size < 4 && attempts < 50) {
             let f;
-            // 50% 機率產生接近正確答案的數字，50% 機率在範圍內隨機
             if (Math.random() < 0.5) {
-                let offset = Math.floor(Math.random() * 7) - 3; // -3 到 +3
+                let offset = Math.floor(Math.random() * 7) - 3;
                 if (offset === 0) offset = 1;
                 f = ans + offset;
             } else {
                 f = Math.floor(Math.random() * (maxAns - minAns + 1)) + minAns;
             }
-            
-            // 針對兩位數，有機率出現十位與個位顛倒的陷阱選項 (例如答案 24 會有陷阱 42)
             if ((state.mathType === 'add2d_nc' || state.mathType === 'sub2d_nb') && Math.random() < 0.2) {
-                let tens = Math.floor(ans / 10);
-                let ones = ans % 10;
+                let tens = Math.floor(ans / 10); let ones = ans % 10;
                 if (tens !== ones) f = ones * 10 + tens;
             }
-
-            // 確保選項不超出合理範圍且沒有負數
-            if (f >= minAns && f <= maxAns && f >= 0) {
-                opts.add(f);
-            }
+            if (f >= minAns && f <= maxAns && f >= 0) opts.add(f);
             attempts++;
         }
-        
-        // 如果極端情況找不到足夠的選項，強制補齊
         if (opts.size < 4) {
             let fallback = minAns;
-            while (opts.size < 4) {
-                opts.add(fallback);
-                fallback++;
-            }
+            while (opts.size < 4) { opts.add(fallback); fallback++; }
         }
 
         let finalOpts = Array.from(opts);
         finalOpts.sort(() => Math.random() - 0.5);
 
-        // 技能發動判定
         const rand = Math.random();
         let type = 'normal';
         if (rand < 0.15) type = 'freeze';
@@ -971,6 +969,7 @@
         return { q: `${a} ${symbol} ${b}`, a: ans, options: finalOpts, type };
     }
 
+    // --- 畫面更新與作答處理 ---
     function updateQuestion(side) {
         if (state.isGameOver) return;
         const data = generateQuestion();
@@ -979,9 +978,11 @@
         const qEl = DOM[`${side}Question`];
         const optEl = DOM[`${side}Options`];
         const tagEl = DOM[`${side}SkillTag`];
+        const inputDisplay = DOM[`${side}InputDisplay`];
 
         qEl.innerText = data.q;
         optEl.innerHTML = '';
+        state[`${side}Input`] = ''; // 清空輸入
         
         qBox.classList.remove('bg-blue-50', 'bg-green-50');
         tagEl.classList.add('hidden');
@@ -999,17 +1000,70 @@
         }
 
         const color = state[side + 'Color'];
-        data.options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = `answer-btn py-3 md:py-5 text-2xl md:text-3xl font-black rounded-2xl shadow-lg bg-white border-b-4 border-${color} text-${color} transition transform active:scale-95 hover:bg-gray-50`;
-            btn.innerText = opt;
-            btn.onclick = (e) => {
-                if(btn.disabled || state.isPaused) return;
-                Array.from(optEl.children).forEach(b => b.disabled = true);
-                handleAnswer(side, opt, data.a, data.q, data.type, e);
-            };
-            optEl.appendChild(btn);
-        });
+
+        if (state.answerMode === 'numpad') {
+            // 數字鍵盤模式
+            inputDisplay.classList.remove('hidden');
+            inputDisplay.innerText = '';
+            optEl.className = 'grid grid-cols-3 gap-1 md:gap-2';
+            
+            const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, '🔙', 0, '✅'];
+            keys.forEach(key => {
+                const btn = document.createElement('button');
+                btn.className = `py-1 md:py-2 text-xl md:text-2xl font-black rounded-lg md:rounded-xl shadow-md bg-white border-b-4 transition transform active:scale-95 hover:bg-gray-50 flex justify-center items-center h-10 md:h-14`;
+                
+                if (key === '✅') {
+                    btn.classList.add('text-green-600', 'border-green-400', 'bg-green-50');
+                } else if (key === '🔙') {
+                    btn.classList.add('text-red-500', 'border-red-300', 'bg-red-50');
+                } else {
+                    btn.classList.add(`text-${color}`, `border-${color}`);
+                }
+                
+                btn.innerText = key;
+                btn.onclick = (e) => handleNumpadInput(side, key, data.a, data.q, data.type, e, optEl);
+                optEl.appendChild(btn);
+            });
+        } else {
+            // 選擇題模式
+            inputDisplay.classList.add('hidden');
+            optEl.className = 'grid grid-cols-2 gap-2 md:gap-4';
+
+            data.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = `answer-btn py-2 md:py-4 text-2xl md:text-3xl font-black rounded-2xl shadow-lg bg-white border-b-4 border-${color} text-${color} transition transform active:scale-95 hover:bg-gray-50 h-14 md:h-20`;
+                btn.innerText = opt;
+                btn.onclick = (e) => {
+                    if(btn.disabled || state.isPaused) return;
+                    Array.from(optEl.children).forEach(b => b.disabled = true);
+                    handleAnswer(side, opt, data.a, data.q, data.type, e);
+                };
+                optEl.appendChild(btn);
+            });
+        }
+    }
+
+    function handleNumpadInput(side, key, correct, question, type, event, optEl) {
+        if (state.isGameOver || state.isPaused) return;
+        playSound('click');
+        
+        const display = DOM[`${side}InputDisplay`];
+        
+        if (key === '🔙') {
+            state[`${side}Input`] = state[`${side}Input`].slice(0, -1);
+            display.innerText = state[`${side}Input`];
+        } else if (key === '✅') {
+            if (state[`${side}Input`] === '') return; // 沒輸入就不作用
+            const picked = parseInt(state[`${side}Input`], 10);
+            Array.from(optEl.children).forEach(b => b.disabled = true);
+            handleAnswer(side, picked, correct, question, type, event);
+        } else {
+            // 限制最多輸入3位數
+            if (state[`${side}Input`].length < 3) {
+                state[`${side}Input`] += key;
+                display.innerText = state[`${side}Input`];
+            }
+        }
     }
 
     function handleAnswer(side, picked, correct, question, type, event) {
@@ -1020,7 +1074,6 @@
             createParticles(event.clientX, event.clientY);
             
             state[`${side}Energy`] = Math.min(100, state[`${side}Energy`] + 20);
-            
             const damage = 30; 
             state.stats[side].correct++;
             state.stats[side].damage += damage;
@@ -1064,7 +1117,7 @@
         if(!state.isGameOver) updateQuestion(side);
     }
 
-    // --- 大絕招系統 ---
+    // --- 大絕招與技能特效 ---
     function castUltimate(side) {
         if (state.isGameOver || state.isPaused || state[`${side}Energy`] < 100) return; 
         
@@ -1081,10 +1134,8 @@
                 const m = document.createElement('div');
                 m.className = 'meteor';
                 m.innerText = '☄️';
-                
                 const startX = (Math.random() * window.innerWidth) - 50;
                 m.style.setProperty('--sx', `${startX}px`);
-                
                 let ex, ey;
                 if (isVs) {
                     const rect = DOM[`${targetSide}CastleWrapper`].getBoundingClientRect();
@@ -1097,7 +1148,6 @@
                 }
                 m.style.setProperty('--ex', `${ex}px`);
                 m.style.setProperty('--ey', `${ey}px`);
-                
                 document.body.appendChild(m);
                 setTimeout(() => m.remove(), 750);
             }, i * 100);
@@ -1123,7 +1173,6 @@
         }, 600);
     }
 
-    // --- 技能與特效 ---
     function applyPlayerFreeze(side) {
         state[side + 'Frozen'] = true;
         const qBox = DOM[`${side}QuestionBox`];
@@ -1174,21 +1223,15 @@
 
         let targetX, targetY, targetEl;
         if (to === 'boss') {
-            targetX = window.innerWidth / 2;
-            targetY = window.innerHeight * 0.35;
-            targetEl = DOM.bossSprite;
+            targetX = window.innerWidth / 2; targetY = window.innerHeight * 0.35; targetEl = DOM.bossSprite;
         } else {
             const wrapper = DOM[`${to}CastleWrapper`];
             const rect = wrapper.getBoundingClientRect();
-            targetX = rect.left + rect.width / 2;
-            targetY = rect.top + rect.height / 2;
-            targetEl = wrapper;
+            targetX = rect.left + rect.width / 2; targetY = rect.top + rect.height / 2; targetEl = wrapper;
         }
 
         setTimeout(() => {
-            p.style.left = targetX + 'px';
-            p.style.top = targetY + 'px';
-            p.style.transform = 'scale(2) rotate(360deg)';
+            p.style.left = targetX + 'px'; p.style.top = targetY + 'px'; p.style.transform = 'scale(2) rotate(360deg)';
         }, 50);
 
         setTimeout(() => {
@@ -1205,14 +1248,10 @@
             const p = document.createElement('div');
             p.className = 'particle';
             p.style.backgroundColor = `hsl(${Math.random()*360}, 70%, 60%)`;
-            p.style.width = Math.random() * 8 + 4 + 'px';
-            p.style.height = p.style.width;
-            p.style.left = x + 'px';
-            p.style.top = y + 'px';
-            const tx = (Math.random() - 0.5) * 150;
-            const ty = (Math.random() - 0.5) * 150;
-            p.style.setProperty('--tx', `${tx}px`);
-            p.style.setProperty('--ty', `${ty}px`);
+            p.style.width = Math.random() * 8 + 4 + 'px'; p.style.height = p.style.width;
+            p.style.left = x + 'px'; p.style.top = y + 'px';
+            const tx = (Math.random() - 0.5) * 150; const ty = (Math.random() - 0.5) * 150;
+            p.style.setProperty('--tx', `${tx}px`); p.style.setProperty('--ty', `${ty}px`);
             document.body.appendChild(p);
             setTimeout(() => p.remove(), 800);
         }
@@ -1220,10 +1259,8 @@
 
     function monsterAttack() {
         const f = document.createElement('div');
-        f.className = 'projectile';
-        f.innerText = '☄️';
-        f.style.left = '50%';
-        f.style.top = '35%';
+        f.className = 'projectile'; f.innerText = '☄️';
+        f.style.left = '50%'; f.style.top = '35%';
         document.body.appendChild(f);
 
         const target = DOM.leftCastleWrapper;
@@ -1231,8 +1268,7 @@
         if(rect.width === 0) { f.remove(); return; }
 
         setTimeout(() => {
-            f.style.left = (rect.left + rect.width/2) + 'px';
-            f.style.top = (rect.top + rect.height/2) + 'px';
+            f.style.left = (rect.left + rect.width/2) + 'px'; f.style.top = (rect.top + rect.height/2) + 'px';
             f.style.transform = 'scale(2.5)';
         }, 50);
 
@@ -1242,12 +1278,11 @@
             state.leftHp = Math.max(0, state.leftHp - (state.isEnraged ? 30 : 15));
             updateUI();
             checkGameOver();
-            target.classList.add('shake');
-            setTimeout(() => target.classList.remove('shake'), 400);
+            target.classList.add('shake'); setTimeout(() => target.classList.remove('shake'), 400);
         }, 600);
     }
 
-    // --- 介面更新與結算 ---
+    // --- UI 與 結算 ---
     function getHpColorClass(percent) {
         if (percent < 30) return 'bg-red-500';
         if (percent < 60) return 'bg-yellow-500';
@@ -1258,7 +1293,6 @@
         if (state.mode === 'coop') {
             DOM.bossHpBar.style.width = (state.bossHp / state.maxBossHp * 100) + '%';
             DOM.bossHpText.innerText = `${Math.floor(state.bossHp)} / ${state.maxBossHp}`;
-            
             const leftPct = (state.leftHp / state.maxCastleHp) * 100;
             DOM.leftCastleHpBar.style.width = leftPct + '%';
             DOM.leftCastleHpBar.className = `h-full w-full transition-all duration-300 ${getHpColorClass(leftPct)}`;
@@ -1300,7 +1334,6 @@
     function handleTimeUp() {
         if (state.isGameOver) return;
         state.isGameOver = true;
-
         let msg = '';
         if (state.mode === 'vs') {
             if (state.leftHp > state.rightHp) msg = `${state.leftName} 剩餘血量較多，獲得勝利！`;
@@ -1344,8 +1377,8 @@
             if (errors.length > 0) {
                 container.classList.remove('hidden');
                 list.innerHTML = errors.map(err => 
-                    `<li><span class="inline-block w-16 md:w-[4.5rem] text-right mr-2">${err.q} =</span> 
-                    <span class="text-red-500 line-through mr-2">${err.picked}</span> 
+                    `<li><span class="inline-block w-[3.5rem] md:w-[4.5rem] text-right mr-1 md:mr-2">${err.q} =</span> 
+                    <span class="text-red-500 line-through mr-1 md:mr-2">${err.picked}</span> 
                     <span class="text-green-600 font-bold">✔️ ${err.correct}</span></li>`
                 ).join('');
             } else {
@@ -1357,13 +1390,10 @@
         encMsgEl.classList.remove('hidden');
         let encMsg = "";
         
-        if (customTitle === '🛑 遊戲中止') {
-            encMsg = "課程階段性結束，大家都表現得很不錯喔！";
-        } else if (state.mode === 'coop') {
-            encMsg = isWin ? "完美的團隊合作！你們連狂暴巨魔都能打敗！🎉" : "差一點點就成功了！狂暴巨魔非常強大，下次一定能贏！💪";
-        } else {
-            encMsg = "真是一場勢均力敵的頂尖對決！雙方的大絕招都太震撼了！🔥";
-        }
+        if (customTitle === '🛑 遊戲中止') encMsg = "課程階段性結束，大家都表現得很不錯喔！";
+        else if (state.mode === 'coop') encMsg = isWin ? "完美的團隊合作！你們連狂暴巨魔都能打敗！🎉" : "差一點點就成功了！狂暴巨魔非常強大，下次一定能贏！💪";
+        else encMsg = "真是一場勢均力敵的頂尖對決！雙方的大絕招都太震撼了！🔥";
+        
         encMsgEl.innerText = encMsg;
     }
 </script>
